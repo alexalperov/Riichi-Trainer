@@ -69,6 +69,11 @@ export default class UkeireHistoryData extends HistoryData {
             }
         }
 
+        // Append the pre-discard hand shape (Tenhou notation) for debugging.
+        if (this.hand) {
+            result += t(`history.${mode}.handShape`, { hand: this.hand });
+        }
+
         result += super.getMessage(t);
 
         return result;

@@ -73,7 +73,8 @@ export const en = {
                 furiten: " Furiten.",
                 furitenWarning: " Be careful of future furiten.",
                 exhausted: " There are no tiles left in the wall. Better luck next time! ",
-                draw: " Draw: {{tile}}. "
+                draw: " Draw: {{tile}}. ",
+                handShape: "<br/>Hand: {{hand}}"
             },
             verbose: {
                 discard: "You chose to discard the {{tile}}, which",
@@ -88,7 +89,8 @@ export const en = {
                 furiten: " You are in furiten. You cannot win this hand by ron, because you have a winning tile in your discards.",
                 furitenWarning: " Be careful of future furiten. Some of the tiles that improve your hand are in your discards.",
                 exhausted: " There are no tiles left in the wall. Better luck next time! ",
-                draw: " You drew the {{tile}}. "
+                draw: " You drew the {{tile}}. ",
+                handShape: "<br/>Hand: {{hand}}"
             }
         },
         discards: {

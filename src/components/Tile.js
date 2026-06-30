@@ -5,6 +5,8 @@ import { TILE_INDEXES } from '../Constants';
 
 /** Returns the suit-specific modifier class for a tile's corner badge. */
 function getIndexSuitClass(index) {
+    // Red fives (indexes 0/10/20) are notated "0" elsewhere; flag them distinctly.
+    if (index < 30 && index % 10 === 0) return 'tile-index--red';
     if (index >= 30) return 'tile-index--honor';
     if (index < 10) return 'tile-index--man';
     if (index < 20) return 'tile-index--pin';
