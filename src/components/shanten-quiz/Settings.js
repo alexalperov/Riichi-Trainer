@@ -14,7 +14,7 @@ class Settings extends React.Component {
             collapsed: true,
             settings: {
                 useTimer: false,
-                showIndexes: false,
+                showIndexes: true,
                 showHandInHistory: false,
                 time: DEFAULT_TIME,
             }

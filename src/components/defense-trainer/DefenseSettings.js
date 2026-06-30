@@ -11,7 +11,7 @@ class Settings extends React.Component {
             collapsed: true,
             settings: {
                 verbose: true,
-                showIndexes: false,
+                showIndexes: true,
                 numberOfRiichis: 1,
                 minimumTurnsBeforeRiichi: 5,
                 tilesInHand: 13,

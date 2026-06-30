@@ -17,7 +17,7 @@ class Settings extends React.Component {
                 threePlayer: false,
                 redFives: 3,
                 verbose: true,
-                showIndexes: false,
+                showIndexes: true,
                 extraConcise: false,
                 spoilers: true,
                 reshuffle: true,

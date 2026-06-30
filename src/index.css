@@ -405,6 +405,7 @@ input[type="number"]:focus,
 
 .handTile {
     position: relative;
+    container-type: inline-size;
     width: 7%;
     height: 7%;
     padding-left: 2px;
@@ -438,6 +439,7 @@ input[type="number"]:focus,
 
 .discardTile {
     position: relative;
+    container-type: inline-size;
     width: 100%;
     height: 100%;
     padding: 2px;
@@ -448,14 +450,41 @@ input[type="number"]:focus,
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
-.index {
+/* Color-coded corner index badge, scaled to each tile via container units */
+.tile-index {
     position: absolute;
-    top: -3px;
-    right: 6px;
-    font-size: 1em;
-    color: red;
-    font-weight: bold;
-    text-shadow: -1px -1px 0 #f5f0eb, 1px -1px 0 #f5f0eb, -1px 1px 0 #f5f0eb, 1px 1px 0 #f5f0eb;
+    top: 6cqw;
+    left: 6cqw;
+    min-width: 28cqw;
+    padding: 0.5cqw 3cqw;
+    font-size: 26cqw;
+    line-height: 1.2;
+    font-weight: 800;
+    text-align: center;
+    color: #ffffff;
+    background: #334155;
+    border-radius: 7cqw;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+    pointer-events: none;
+    user-select: none;
+}
+
+.tile-index--man { background: #c0392b; }
+.tile-index--pin { background: #1d6fe0; }
+.tile-index--sou { background: #15803d; }
+.tile-index--honor { background: #475569; }
+
+/* Keep the badge from looking oversized on the small reference tiles */
+.discardTile .tile-index {
+    top: 5cqw;
+    left: 5cqw;
+    font-size: 30cqw;
+    border-radius: 8cqw;
+}
+
+/* Legacy class name retained as an alias for any cached markup */
+.index {
+    display: none;
 }
 
 /* ------------------------------------------------------------------ */
