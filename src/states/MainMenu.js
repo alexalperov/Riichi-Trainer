@@ -1,5 +1,5 @@
 import React from 'react';
-import { Container, Row, Button, Col, Dropdown, DropdownItem, DropdownMenu, DropdownToggle } from 'reactstrap';
+import { Container, Row, Col, Dropdown, DropdownItem, DropdownMenu, DropdownToggle } from 'reactstrap';
 import UkeireQuiz from "./UkeireQuiz";
 import ReplayAnalysis from "./ReplayAnalysis";
 import UtilsState from "./UtilsState";
@@ -68,24 +68,29 @@ class MainMenu extends React.Component {
                 page = <UkeireQuiz />;
         }
 
+        const tabs = [
+            { id: STATES.UKEIRE, label: t("menu.trainer") },
+            { id: STATES.REPLAY, label: t("menu.analyzer") },
+            { id: STATES.SOUTH_FOUR, label: t("menu.allLast") },
+            { id: STATES.DEFENSE, label: t("menu.defense") },
+            { id: STATES.EXPLORER, label: t("menu.explorer") },
+            { id: STATES.SHANTEN, label: t("menu.shanten") },
+            { id: STATES.UTILS, label: t("menu.utils") },
+        ];
+
         return (
             <React.Fragment>
-                <Container className="mb-4">
-                    <Row>
-                        <Button color="success" xs="4" disabled={this.state.active === STATES.UKEIRE} onClick={() => this.onSetActivePage(STATES.UKEIRE)}>{t("menu.trainer")}</Button>
-                        <Button xs="4" disabled={this.state.active === STATES.REPLAY} onClick={() => this.onSetActivePage(STATES.REPLAY)}>{t("menu.analyzer")}</Button>
-                        <Button xs="4" disabled={this.state.active === STATES.SOUTH_FOUR} onClick={() => this.onSetActivePage(STATES.SOUTH_FOUR)}>{t("menu.allLast")}</Button>
-                        <Button xs="4" disabled={this.state.active === STATES.DEFENSE} onClick={() => this.onSetActivePage(STATES.DEFENSE)}>{t("menu.defense")}</Button>
-                        <Button xs="4" disabled={this.state.active === STATES.EXPLORER} onClick={() => this.onSetActivePage(STATES.EXPLORER)}>{t("menu.explorer")}</Button>
-                        <Button xs="4" disabled={this.state.active === STATES.SHANTEN} onClick={() => this.onSetActivePage(STATES.SHANTEN)}>{t("menu.shanten")}</Button>
-                        <Button xs="4" disabled={this.state.active === STATES.UTILS} onClick={() => this.onSetActivePage(STATES.UTILS)}>{t("menu.utils")}</Button>
-                    </Row>
-                    <Row>
-                        <Dropdown isOpen={this.state.dropdownOpen} toggle={() => this.toggleDropdown()}>
+                <header className="app-header">
+                    <div className="app-header__bar">
+                        <h1 className="app-title">
+                            <span className="app-title__mark" role="img" aria-label="Mahjong tile">🀄</span>
+                            <span>Riichi <span className="app-title__accent">Trainer</span></span>
+                        </h1>
+                        <Dropdown className="lang-dropdown" isOpen={this.state.dropdownOpen} toggle={() => this.toggleDropdown()}>
                             <DropdownToggle caret>
                                 🌐 {t("menu.language")}
                             </DropdownToggle>
-                            <DropdownMenu>
+                            <DropdownMenu right>
                                 <DropdownItem onClick={() => this.changeLanguage("en")}>English</DropdownItem>
                                 <DropdownItem onClick={() => this.changeLanguage("ja")}>日本語</DropdownItem>
                                 <DropdownItem onClick={() => this.changeLanguage("ru")}>Русский</DropdownItem>
@@ -97,11 +102,24 @@ class MainMenu extends React.Component {
                                 <DropdownItem onClick={() => this.changeLanguage("de")}>Deutsch</DropdownItem>
                             </DropdownMenu>
                         </Dropdown>
-                    </Row>
-                </Container>
+                    </div>
+                    <nav className="app-nav" aria-label={t("menu.language")}>
+                        {tabs.map(tab => (
+                            <button
+                                key={tab.id}
+                                type="button"
+                                className={"nav-tab" + (this.state.active === tab.id ? " active" : "")}
+                                aria-current={this.state.active === tab.id ? "page" : undefined}
+                                onClick={() => this.onSetActivePage(tab.id)}
+                            >
+                                {tab.label}
+                            </button>
+                        ))}
+                    </nav>
+                </header>
                 {page}
-                <Container className="mt-4">
-                    <Row className="mt-4">
+                <Container className="app-credits">
+                    <Row>
                         <Col xs="12"><span>{t("credits.label")}</span></Col>
                         <Col xs="12"><span>{t("credits.tilesPreLink")} <a href="https://github.com/FluffyStuff/riichi-mahjong-tiles">{t("credits.tilesLinkText")}</a>{t("credits.tilesPostLink")}<a href="https://creativecommons.org/licenses/by/4.0/">{t("credits.ccLinkText")}</a></span></Col>
                         <Col xs="12"><span>{t("credits.shantenPreLink")}<a href="http://cmj3.web.fc2.com/#syanten">{t("credits.shantenLinkText")}</a>{t("credits.shantenPostLink")}</span></Col>
