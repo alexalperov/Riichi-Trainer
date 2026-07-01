@@ -11,4 +11,8 @@ import "./i18n";
 import MainMenu from './states/MainMenu';
 
 ReactDOM.render(<MainMenu />, document.getElementById('root'));
-serviceWorker.register();
+// Unregister the service worker: its cache-first PWA behaviour made
+// deployed updates invisible until every tab was closed. This app doesn't
+// need offline support, so we actively unregister any existing worker so
+// new deploys are always picked up immediately.
+serviceWorker.unregister();
