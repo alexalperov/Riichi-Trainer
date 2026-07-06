@@ -403,37 +403,113 @@ input[type="number"]:focus,
 /* Tiles                                                              */
 /* ------------------------------------------------------------------ */
 
+/* Tile bodies are drawn in CSS; the imported SVGs are just the face art.
+   This gives crisp vector tiles at any size, with a real sense of depth:
+   an ivory face, a lighter ivory side, and a jade back peeking out below. */
+
 .handTile {
     position: relative;
     container-type: inline-size;
     width: 7%;
-    height: 7%;
     padding-left: 2px;
     padding-right: 2px;
+    /* Leaves room for the tile's depth shadows when the hand wraps */
+    margin-bottom: 8px;
     transition: transform var(--rt-ease), filter var(--rt-ease);
 }
 
 .tile {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 300 / 400;
+    background: linear-gradient(155deg, #fffdf7 0%, #f7f2e6 62%, #ebe3cf 100%);
+    border-radius: 10cqw / 7.5cqw;
+    box-shadow:
+        0 4.5cqw 0 -1cqw #d8cdb4,
+        0 9cqw 0 -1.5cqw #17685c,
+        0 12cqw 16cqw rgba(0, 0, 0, 0.38);
+    transition: box-shadow var(--rt-ease);
+}
+
+.tile-face {
+    position: absolute;
+    inset: 0;
     width: 100%;
     height: 100%;
-    border-radius: 5px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.28);
-    background: #fdfbf6;
+    object-fit: contain;
+    border-radius: inherit;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* Face-down tile (blind mode): jade back with an ivory rim */
+.tile--back {
+    background:
+        linear-gradient(155deg, #2ba18d 0%, #1d7a6b 55%, #14584e 100%);
+    box-shadow:
+        inset 0 0 0 2.5cqw rgba(255, 255, 255, 0.22),
+        0 4.5cqw 0 -1cqw #d8cdb4,
+        0 9cqw 0 -1.5cqw #17685c,
+        0 12cqw 16cqw rgba(0, 0, 0, 0.38);
+}
+
+.tile--back .tile-face {
+    opacity: 0;
 }
 
 /* Lift hand tiles on hover (only where a pointer can hover) */
 @media (hover: hover) {
-    .handTile img.tile {
+    .handTile .tile-face {
         cursor: pointer;
     }
 
     .handTile:hover {
         transform: translateY(-8px);
         filter: brightness(1.04);
+        z-index: 2;
     }
 
-    .handTile:hover img.tile {
-        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.35);
+    .handTile:hover .tile {
+        box-shadow:
+            0 4.5cqw 0 -1cqw #d8cdb4,
+            0 9cqw 0 -1.5cqw #17685c,
+            0 22cqw 24cqw rgba(0, 0, 0, 0.45);
+    }
+}
+
+/* Press feedback when discarding */
+.handTile:active {
+    transform: translateY(-2px) scale(0.96);
+    filter: brightness(0.98);
+    transition-duration: 60ms;
+}
+
+/* The freshly drawn tile: separated from the hand, gold ring, drop-in pop */
+.handTile--draw {
+    margin-left: 1.6%;
+    animation: tile-draw-in 280ms cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+}
+
+.handTile--draw .tile::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    box-shadow:
+        inset 0 0 0 1.8cqw rgba(245, 196, 81, 0.85),
+        0 0 14cqw rgba(245, 196, 81, 0.35);
+    pointer-events: none;
+}
+
+@keyframes tile-draw-in {
+    from {
+        transform: translateY(-18px) rotate(2deg);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0) rotate(0);
+        opacity: 1;
     }
 }
 
@@ -445,9 +521,211 @@ input[type="number"]:focus,
     padding: 2px;
 }
 
+/* Reference/discard tiles are small and packed in rows: shallower depth */
 .discardTile .tile {
-    border-radius: 4px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    border-radius: 9cqw / 7cqw;
+    box-shadow:
+        0 3cqw 0 -0.5cqw #d8cdb4,
+        0 6cqw 0 -1cqw #17685c,
+        0 6cqw 8cqw rgba(0, 0, 0, 0.3);
+}
+
+/* ------------------------------------------------------------------ */
+/* Hand tray (efficiency trainer)                                     */
+/* ------------------------------------------------------------------ */
+
+.hand-tray {
+    margin-top: 1rem;
+    padding: 1.05rem 1rem 1.15rem;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(0, 0, 0, 0.22) 100%);
+    border: 1px solid var(--rt-panel-border);
+    border-radius: var(--rt-radius);
+    box-shadow: inset 0 2px 12px rgba(0, 0, 0, 0.35);
+}
+
+.trainer-toolbar {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.6rem;
+}
+
+.trainer-timer {
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    background: var(--rt-panel);
+    border: 1px solid var(--rt-panel-border);
+    border-radius: 999px;
+    padding: 0.15rem 0.7rem;
+}
+
+/* ------------------------------------------------------------------ */
+/* Discard feedback panel (efficiency trainer)                        */
+/* ------------------------------------------------------------------ */
+
+.feedback-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+    margin-top: 1rem;
+    padding: 0.8rem 1rem;
+    background: var(--rt-panel);
+    border: 1px solid var(--rt-panel-border);
+    border-radius: var(--rt-radius);
+}
+
+.feedback-panel--complete {
+    background: linear-gradient(135deg, rgba(245, 196, 81, 0.14), rgba(20, 184, 166, 0.12));
+    border-color: rgba(245, 196, 81, 0.55);
+    animation: complete-glow 1.6s ease-in-out infinite alternate;
+}
+
+@keyframes complete-glow {
+    from { box-shadow: 0 0 0 rgba(245, 196, 81, 0); }
+    to { box-shadow: 0 0 22px rgba(245, 196, 81, 0.28); }
+}
+
+.feedback-verdict {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    animation: feedback-pop 260ms cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+}
+
+@keyframes feedback-pop {
+    from {
+        transform: translateY(5px) scale(0.94);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+}
+
+.feedback-icon {
+    font-size: 1.45rem;
+    line-height: 1;
+}
+
+.feedback-text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.feedback-title {
+    font-weight: 700;
+    font-size: 1.02rem;
+    line-height: 1.25;
+}
+
+.feedback-subtitle {
+    color: var(--rt-text-dim);
+    font-size: 0.88rem;
+    line-height: 1.3;
+}
+
+.feedback-verdict--optimal .feedback-title { color: #4ade80; }
+.feedback-verdict--good .feedback-title { color: #fbbf24; }
+.feedback-verdict--bad .feedback-title { color: #f87171; }
+.feedback-verdict--hint .feedback-title { color: var(--rt-text-dim); font-weight: 600; }
+.feedback-verdict--complete .feedback-title {
+    color: #f5c451;
+    font-size: 1.2rem;
+    letter-spacing: 0.01em;
+}
+
+.feedback-streak {
+    margin-left: auto;
+    flex: 0 0 auto;
+    padding: 0.22rem 0.7rem;
+    background: rgba(251, 146, 60, 0.14);
+    border: 1px solid rgba(251, 146, 60, 0.45);
+    border-radius: 999px;
+    color: #fdba74;
+    font-weight: 700;
+    font-size: 0.92rem;
+    font-variant-numeric: tabular-nums;
+    animation: feedback-pop 300ms cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+}
+
+.feedback-meter {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.78rem;
+}
+
+.feedback-meter__label {
+    color: var(--rt-text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+    flex: 0 0 auto;
+}
+
+.feedback-meter__track {
+    flex: 1 1 auto;
+    height: 8px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.09);
+    overflow: hidden;
+}
+
+.feedback-meter__fill {
+    display: block;
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--rt-accent), #4ade80);
+    transition: width 450ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.feedback-meter__fill--perfect {
+    background: linear-gradient(90deg, #f5c451, #fde68a);
+}
+
+.feedback-meter__value {
+    flex: 0 0 auto;
+    min-width: 2.8em;
+    text-align: right;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--rt-text);
+    font-size: 0.88rem;
+}
+
+/* Round sound toggle button */
+.btn.sound-toggle {
+    background: var(--rt-panel) !important;
+    border: 1px solid var(--rt-panel-border);
+    border-radius: 999px;
+    width: 2.2rem;
+    height: 2.2rem;
+    padding: 0;
+    line-height: 1;
+    font-size: 0.95rem;
+    box-shadow: none;
+}
+
+.btn.sound-toggle:hover {
+    background: rgba(255, 255, 255, 0.12) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .handTile,
+    .handTile--draw,
+    .feedback-verdict,
+    .feedback-streak,
+    .feedback-panel--complete {
+        animation: none;
+        transition: none;
+    }
+
+    .feedback-meter__fill {
+        transition: none;
+    }
 }
 
 /* Color-coded corner index badge, scaled to each tile via container units */
@@ -539,9 +817,9 @@ input[type="number"]:focus,
         padding: 0.4rem 0.8rem;
     }
 
-    /* Tiles a touch larger so they remain tappable on phones */
+    /* Larger tiles on phones: two comfortable rows beat one cramped one */
     .handTile {
-        width: 8.5%;
+        width: 12%;
     }
 }
 

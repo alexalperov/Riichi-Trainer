@@ -20,17 +20,25 @@ function Tile(props) {
 
     let label = TILE_INDEXES[displayTile];
     let showBadge = props.showIndexes && label != null && String(label).trim() !== "";
+    let isBack = displayTile === 30;
+
+    let bodyClass = "tile" + (isBack ? " tile--back" : "");
+    let wrapperClass = props.className + (props.isDraw ? " handTile--draw" : "");
 
     return (
-        <div className={props.className}>
-            <img
-                className="tile"
-                name={props.tile}
-                src={getTileImage(displayTile)}
-                title={getTileAsText(t, displayTile)}
-                alt={getTileAsText(t, displayTile)}
-                onClick={props.onClick}
-            />
+        <div className={wrapperClass}>
+            <div className={bodyClass}>
+                {/* The img is the click target: existing handlers read event.target.name. */}
+                <img
+                    className="tile-face"
+                    name={props.tile}
+                    src={getTileImage(displayTile)}
+                    title={getTileAsText(t, displayTile)}
+                    alt={getTileAsText(t, displayTile)}
+                    onClick={props.onClick}
+                    draggable={false}
+                />
+            </div>
             {showBadge &&
                 <span className={"tile-index " + getIndexSuitClass(displayTile)}>{label}</span>
             }

@@ -26,12 +26,15 @@ function SortedHand(props) {
     }
 
     if (lastDraw > -1) {
+        // Key on the draw so the draw-in animation replays on every new tile.
+        let drawKey = "draw-" + (props.drawId != null ? props.drawId : lastDraw);
         tiles.push((
             <Tile className="handTile"
-                key={index++}
+                key={drawKey}
                 tile={lastDraw}
                 onClick={props.onTileClick}
                 showIndexes={props.showIndexes}
+                isDraw
             />
         ));
     }

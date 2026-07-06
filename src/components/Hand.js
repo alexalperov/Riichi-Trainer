@@ -53,13 +53,16 @@ function Hand(props) {
 
     if (hasLastDraw) {
         hand[lastDraw]++;
+        // Key on the draw so the draw-in animation replays on every new tile.
+        let drawKey = "draw-" + (props.drawId != null ? props.drawId : lastDraw);
         tiles.push((
             <Tile className="handTile"
-                key={index++}
+                key={drawKey}
                 tile={lastDraw}
                 displayTile={lastDraw}
                 onClick={props.onTileClick}
                 showIndexes={props.showIndexes}
+                isDraw
             />
         ));
     }

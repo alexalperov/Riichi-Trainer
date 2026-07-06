@@ -22,6 +22,8 @@ import { withTranslation } from 'react-i18next';
 import LocalizedMessage from '../models/LocalizedMessage';
 import UkeireHistoryData from '../components/ukeire-quiz/UkeireHistoryData';
 import HistoryData from '../models/HistoryData';
+import DiscardFeedback from '../components/ukeire-quiz/DiscardFeedback';
+import { playTileClack, playTenpaiChime } from '../scripts/TileSounds';
 
 class UkeireQuiz extends React.Component {
     constructor(props) {
@@ -59,7 +61,16 @@ class UkeireQuiz extends React.Component {
             disclaimerSeen: false,
             currentTime: 0,
             currentBonus: 0,
+            streak: 0,
+            soundEnabled: true,
         }
+
+        try {
+            let savedSound = window.localStorage.getItem("trainerSound");
+            if (savedSound != null) {
+                this.state.soundEnabled = savedSound !== "off";
+            }
+        } catch { }
     }
 
     componentDidMount() {
@@ -185,6 +196,7 @@ class UkeireQuiz extends React.Component {
             possibleTotal: 0,
             history: history,
             isComplete: false,
+            streak: 0,
             lastDraw: lastDraw || shuffle.pop(),
             roundWind: roundWind || this.pickRoundWind(),
             seatWind: seatWind,
@@ -382,11 +394,18 @@ class UkeireQuiz extends React.Component {
             players[0].discards.slice()
         );
 
+        let reachedTenpai = false;
         if (shanten <= 0 && handUkeire.value > 0) {
             // If the hand is tenpai, and has winning tiles outside of the hand, training is complete
             let message = new LocalizedMessage("trainer.complete", { achieved: achievedTotal, total: possibleTotal, percent: Math.floor(achievedTotal / possibleTotal * 1000) / 10 })
             historyData.message = message;
             isComplete = true;
+            reachedTenpai = true;
+        }
+
+        if (this.state.soundEnabled) {
+            playTileClack();
+            if (reachedTenpai) playTenpaiChime();
         }
 
         if (!isComplete) {
@@ -440,13 +459,16 @@ class UkeireQuiz extends React.Component {
             }
         }
 
+        let wasOptimal = chosenUkeire.value === ukeire[bestTile].value;
+
         this.setState({
             hand: hand,
             tilePool: tilePool,
             remainingTiles: remainingTiles,
             players: players,
             discardCount: this.state.discardCount + 1,
-            optimalCount: this.state.optimalCount + (chosenUkeire.value === ukeire[bestTile].value ? 1 : 0),
+            optimalCount: this.state.optimalCount + (wasOptimal ? 1 : 0),
+            streak: wasOptimal ? this.state.streak + 1 : 0,
             hasCopied: false,
             achievedTotal: achievedTotal,
             possibleTotal: possibleTotal,
@@ -505,6 +527,16 @@ class UkeireQuiz extends React.Component {
 
         try {
             window.localStorage.setItem("stats", JSON.stringify(stats));
+        } catch { }
+    }
+
+    /** Toggles the discard sound effects on or off, remembering the choice. */
+    toggleSound() {
+        let enabled = !this.state.soundEnabled;
+        this.setState({ soundEnabled: enabled });
+
+        try {
+            window.localStorage.setItem("trainerSound", enabled ? "on" : "off");
         } catch { }
     }
 
@@ -579,6 +611,9 @@ class UkeireQuiz extends React.Component {
     render() {
         let { t } = this.props;
         let blind = this.state.players.length && this.state.players[0].discards.length && this.state.settings.blind && !this.state.isComplete;
+        let latestDiscard = this.state.history.length && this.state.history[0] instanceof UkeireHistoryData
+            ? this.state.history[0]
+            : null;
 
         return (
             <Container>
@@ -588,25 +623,46 @@ class UkeireQuiz extends React.Component {
                     {this.state.disclaimerSeen ? "" : <span>{t("trainer.disclaimer")}</span>}
                 </Row>
                 <ValueTileDisplay roundWind={this.state.roundWind} seatWind={this.state.seatWind} dora={this.state.dora} showIndexes={this.state.settings.showIndexes} />
-                <Row className="mb-2 mt-2">
-                    <span>{t("trainer.instructions")}</span>
-                </Row>
-                {this.state.settings.sort
-                    ? <Hand tiles={this.state.hand}
-                        lastDraw={this.state.lastDraw}
-                        onTileClick={this.onTileClicked}
-                        showIndexes={this.state.settings.showIndexes && !blind}
-                        blind={blind} />
-                    : <SortedHand tiles={this.state.shuffle}
-                        lastDraw={this.state.lastDraw}
-                        onTileClick={this.onTileClicked}
-                        showIndexes={this.state.settings.showIndexes && !blind}
-                        blind={blind} />
-                }
-                {this.state.settings.useTimer ?
-                    <Row className="mt-2" style={{justifyContent:'flex-end', marginRight:1}}><span>{this.state.currentTime.toFixed(1)} + {this.state.currentBonus.toFixed(1)}</span></Row>
-                    : ""
-                }
+                <div className="hand-tray">
+                    {this.state.settings.sort
+                        ? <Hand tiles={this.state.hand}
+                            lastDraw={this.state.lastDraw}
+                            drawId={this.state.discardCount}
+                            onTileClick={this.onTileClicked}
+                            showIndexes={this.state.settings.showIndexes && !blind}
+                            blind={blind} />
+                        : <SortedHand tiles={this.state.shuffle}
+                            lastDraw={this.state.lastDraw}
+                            drawId={this.state.discardCount}
+                            onTileClick={this.onTileClicked}
+                            showIndexes={this.state.settings.showIndexes && !blind}
+                            blind={blind} />
+                    }
+                </div>
+                <div className="trainer-toolbar">
+                    {this.state.settings.useTimer &&
+                        <span className="trainer-timer">{this.state.currentTime.toFixed(1)} + {this.state.currentBonus.toFixed(1)}</span>
+                    }
+                    <Button
+                        className="sound-toggle"
+                        color="basic"
+                        onClick={() => this.toggleSound()}
+                        title={this.state.soundEnabled ? t("trainer.soundOn") : t("trainer.soundOff")}
+                        aria-label={this.state.soundEnabled ? t("trainer.soundOn") : t("trainer.soundOff")}
+                    >
+                        {this.state.soundEnabled ? "🔊" : "🔇"}
+                    </Button>
+                </div>
+                <DiscardFeedback
+                    latest={latestDiscard}
+                    turn={this.state.discardCount}
+                    streak={this.state.streak}
+                    isComplete={this.state.isComplete}
+                    achieved={this.state.achievedTotal}
+                    possible={this.state.possibleTotal}
+                    spoilers={this.state.settings.spoilers}
+                    verbose={this.state.settings.verbose}
+                />
                 <Row className="mt-2">
                     <Col xs="6" sm="3" md="3" lg="2">
                         <Button className="btn-block" color={this.state.isComplete ? "success" : "warning"} onClick={() => this.onNewHand()}>{t("trainer.newHandButtonLabel")}</Button>
