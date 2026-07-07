@@ -22,7 +22,6 @@ import { withTranslation } from 'react-i18next';
 import LocalizedMessage from '../models/LocalizedMessage';
 import UkeireHistoryData from '../components/ukeire-quiz/UkeireHistoryData';
 import HistoryData from '../models/HistoryData';
-import DiscardFeedback from '../components/ukeire-quiz/DiscardFeedback';
 import { playTileClack, playTenpaiChime } from '../scripts/TileSounds';
 
 class UkeireQuiz extends React.Component {
@@ -61,7 +60,6 @@ class UkeireQuiz extends React.Component {
             disclaimerSeen: false,
             currentTime: 0,
             currentBonus: 0,
-            streak: 0,
             soundEnabled: true,
         }
 
@@ -196,7 +194,6 @@ class UkeireQuiz extends React.Component {
             possibleTotal: 0,
             history: history,
             isComplete: false,
-            streak: 0,
             lastDraw: lastDraw || shuffle.pop(),
             roundWind: roundWind || this.pickRoundWind(),
             seatWind: seatWind,
@@ -459,16 +456,13 @@ class UkeireQuiz extends React.Component {
             }
         }
 
-        let wasOptimal = chosenUkeire.value === ukeire[bestTile].value;
-
         this.setState({
             hand: hand,
             tilePool: tilePool,
             remainingTiles: remainingTiles,
             players: players,
             discardCount: this.state.discardCount + 1,
-            optimalCount: this.state.optimalCount + (wasOptimal ? 1 : 0),
-            streak: wasOptimal ? this.state.streak + 1 : 0,
+            optimalCount: this.state.optimalCount + (chosenUkeire.value === ukeire[bestTile].value ? 1 : 0),
             hasCopied: false,
             achievedTotal: achievedTotal,
             possibleTotal: possibleTotal,
@@ -611,18 +605,15 @@ class UkeireQuiz extends React.Component {
     render() {
         let { t } = this.props;
         let blind = this.state.players.length && this.state.players[0].discards.length && this.state.settings.blind && !this.state.isComplete;
-        let latestDiscard = this.state.history.length && this.state.history[0] instanceof UkeireHistoryData
-            ? this.state.history[0]
-            : null;
 
         return (
             <Container>
                 <Settings onChange={this.onSettingsChanged} />
                 <StatsDisplay values={this.state.stats} onReset={() => this.resetStats()} />
-                <Row>
-                    {this.state.disclaimerSeen ? "" : <span>{t("trainer.disclaimer")}</span>}
-                </Row>
                 <ValueTileDisplay roundWind={this.state.roundWind} seatWind={this.state.seatWind} dora={this.state.dora} showIndexes={this.state.settings.showIndexes} />
+                <Row className="mb-2 mt-2">
+                    <span>{t("trainer.instructions")}</span>
+                </Row>
                 <div className="hand-tray">
                     {this.state.settings.sort
                         ? <Hand tiles={this.state.hand}
@@ -653,16 +644,6 @@ class UkeireQuiz extends React.Component {
                         {this.state.soundEnabled ? "🔊" : "🔇"}
                     </Button>
                 </div>
-                <DiscardFeedback
-                    latest={latestDiscard}
-                    turn={this.state.discardCount}
-                    streak={this.state.streak}
-                    isComplete={this.state.isComplete}
-                    achieved={this.state.achievedTotal}
-                    possible={this.state.possibleTotal}
-                    spoilers={this.state.settings.spoilers}
-                    verbose={this.state.settings.verbose}
-                />
                 <Row className="mt-2">
                     <Col xs="6" sm="3" md="3" lg="2">
                         <Button className="btn-block" color={this.state.isComplete ? "success" : "warning"} onClick={() => this.onNewHand()}>{t("trainer.newHandButtonLabel")}</Button>
