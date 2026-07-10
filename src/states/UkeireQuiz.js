@@ -51,6 +51,9 @@ class UkeireQuiz extends React.Component {
                 totalPossibleEfficiency: 0,
                 totalOptimalDiscards: 0
             },
+            /** One record per completed hand: {t: timestamp, d: discards, o: optimal discards, a: achieved ukeire, p: possible ukeire} */
+            statsHistory: [],
+            storagePersistent: null,
             history: [],
             isComplete: false,
             roundWind: 31,
@@ -73,25 +76,39 @@ class UkeireQuiz extends React.Component {
 
     componentDidMount() {
         try {
+            let newState = {};
+
             let savedStats = window.localStorage.getItem("stats");
             if (savedStats) {
                 savedStats = JSON.parse(savedStats);
-
-                this.setState({
-                    stats: {
-                        totalDiscards: savedStats.totalDiscards,
-                        totalTenpai: savedStats.totalTenpai,
-                        totalEfficiency: savedStats.totalEfficiency,
-                        totalPossibleEfficiency: savedStats.totalPossibleEfficiency,
-                        totalOptimalDiscards: savedStats.totalOptimalDiscards
-                    }
-                }, () => this.onNewHand());
-            } else {
-                this.setState({}, () => this.onNewHand());
+                newState.stats = {
+                    totalDiscards: savedStats.totalDiscards,
+                    totalTenpai: savedStats.totalTenpai,
+                    totalEfficiency: savedStats.totalEfficiency,
+                    totalPossibleEfficiency: savedStats.totalPossibleEfficiency,
+                    totalOptimalDiscards: savedStats.totalOptimalDiscards
+                };
             }
+
+            let savedHistory = window.localStorage.getItem("statsHistory");
+            if (savedHistory) {
+                savedHistory = JSON.parse(savedHistory);
+                if (Array.isArray(savedHistory)) {
+                    newState.statsHistory = savedHistory;
+                }
+            }
+
+            this.setState(newState, () => this.onNewHand());
         } catch {
             this.setState({}, () => this.onNewHand());
         }
+
+        // Report whether this origin's storage is already protected from eviction.
+        try {
+            if (navigator.storage && navigator.storage.persisted) {
+                navigator.storage.persisted().then((persisted) => this.setState({ storagePersistent: persisted }));
+            }
+        } catch { }
     }
 
     componentWillUnmount() {
@@ -496,12 +513,35 @@ class UkeireQuiz extends React.Component {
         stats.totalPossibleEfficiency += this.state.possibleTotal;
         stats.totalOptimalDiscards += this.state.optimalCount;
 
+        // Record this hand so progress can be charted over time.
+        let statsHistory = this.state.statsHistory.slice();
+        statsHistory.push({
+            t: Date.now(),
+            d: this.state.discardCount,
+            o: this.state.optimalCount,
+            a: this.state.achievedTotal,
+            p: this.state.possibleTotal
+        });
+        if (statsHistory.length > 1000) {
+            statsHistory = statsHistory.slice(statsHistory.length - 1000);
+        }
+
         this.setState({
-            stats: stats
+            stats: stats,
+            statsHistory: statsHistory
         });
 
         try {
             window.localStorage.setItem("stats", JSON.stringify(stats));
+            window.localStorage.setItem("statsHistory", JSON.stringify(statsHistory));
+        } catch { }
+
+        // Ask the browser to protect this origin's storage from eviction.
+        // Chromium grants or denies silently; nothing here blocks the game.
+        try {
+            if (this.state.storagePersistent === false && navigator.storage && navigator.storage.persist) {
+                navigator.storage.persist().then((granted) => this.setState({ storagePersistent: granted }));
+            }
         } catch { }
     }
 
@@ -516,12 +556,72 @@ class UkeireQuiz extends React.Component {
         };
 
         this.setState({
-            stats: stats
+            stats: stats,
+            statsHistory: []
         });
 
         try {
             window.localStorage.setItem("stats", JSON.stringify(stats));
+            window.localStorage.setItem("statsHistory", "[]");
         } catch { }
+    }
+
+    /** Downloads the player's stats as a JSON file they can keep or move between browsers. */
+    exportStats() {
+        try {
+            let payload = {
+                app: "riichi-trainer",
+                version: 1,
+                exportedAt: new Date().toISOString(),
+                stats: this.state.stats,
+                statsHistory: this.state.statsHistory
+            };
+
+            let blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+            let url = URL.createObjectURL(blob);
+            let link = document.createElement("a");
+            link.href = url;
+            link.download = "riichi-trainer-stats-" + new Date().toISOString().slice(0, 10) + ".json";
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        } catch { }
+    }
+
+    /**
+     * Restores stats from a previously exported file.
+     * @param {Object} data The parsed JSON payload from the file.
+     * @returns {boolean} Whether the payload was valid and applied.
+     */
+    importStats(data) {
+        if (!data || typeof data !== "object" || !data.stats || typeof data.stats !== "object") {
+            return false;
+        }
+
+        let stats = {
+            totalDiscards: parseInt(data.stats.totalDiscards) || 0,
+            totalTenpai: parseInt(data.stats.totalTenpai) || 0,
+            totalEfficiency: parseInt(data.stats.totalEfficiency) || 0,
+            totalPossibleEfficiency: parseInt(data.stats.totalPossibleEfficiency) || 0,
+            totalOptimalDiscards: parseInt(data.stats.totalOptimalDiscards) || 0
+        };
+
+        let statsHistory = Array.isArray(data.statsHistory)
+            ? data.statsHistory.filter((entry) => entry && typeof entry === "object" && typeof entry.t === "number")
+            : [];
+
+        this.setState({
+            stats: stats,
+            statsHistory: statsHistory
+        });
+
+        try {
+            window.localStorage.setItem("stats", JSON.stringify(stats));
+            window.localStorage.setItem("statsHistory", JSON.stringify(statsHistory));
+        } catch { }
+
+        return true;
     }
 
     /** Toggles the discard sound effects on or off, remembering the choice. */
@@ -609,7 +709,14 @@ class UkeireQuiz extends React.Component {
         return (
             <Container>
                 <Settings onChange={this.onSettingsChanged} />
-                <StatsDisplay values={this.state.stats} onReset={() => this.resetStats()} />
+                <StatsDisplay
+                    values={this.state.stats}
+                    history={this.state.statsHistory}
+                    persistent={this.state.storagePersistent}
+                    onReset={() => this.resetStats()}
+                    onExport={() => this.exportStats()}
+                    onImport={(data) => this.importStats(data)}
+                />
                 <ValueTileDisplay roundWind={this.state.roundWind} seatWind={this.state.seatWind} dora={this.state.dora} showIndexes={this.state.settings.showIndexes} />
                 <Row className="mb-2 mt-2">
                     <span>{t("trainer.instructions")}</span>

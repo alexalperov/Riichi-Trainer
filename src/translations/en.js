@@ -149,7 +149,21 @@ export const en = {
             reset: "Reset Stats",
             confirmation: "Are you sure you want to reset all of your stats to zero? You cannot undo this action.",
             yes: "Yes, reset!",
-            no: "No, don't reset!"
+            no: "No, don't reset!",
+            chartTitle: "Efficiency per hand (last 60 hands)",
+            chartEmpty: "Bring a couple of hands to ready and your efficiency trend will appear here.",
+            chartTooltipHand: "Hand {{number}} · {{date}}",
+            chartTooltipDetail: "{{achieved}}/{{possible}} ukeire · {{optimal}}/{{discards}} optimal discards",
+            chartTableLabel: "Show as table",
+            chartTableHand: "Hand",
+            chartTableDate: "Date",
+            chartTableEfficiency: "Efficiency",
+            chartTableOptimal: "Optimal",
+            export: "Export Stats",
+            import: "Import Stats",
+            importError: "Couldn't read that file. Choose a stats file exported from this trainer.",
+            storagePersistent: "This browser has granted persistent storage, so your stats won't be evicted under storage pressure. Clearing site data still removes them — keep an export as a backup.",
+            storageBestEffort: "Stats live in this browser's local storage and vanish if you clear site data. Export them now and then to keep a backup you can import anywhere."
         },
         credits: {
             label: "Credits",

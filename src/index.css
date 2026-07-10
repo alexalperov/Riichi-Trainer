@@ -560,6 +560,157 @@ input[type="number"]:focus,
     padding: 0.15rem 0.7rem;
 }
 
+/* ------------------------------------------------------------------ */
+/* Stats chart (efficiency over time, inside the stats card)          */
+/* ------------------------------------------------------------------ */
+
+.stats-chart {
+    margin-bottom: 1.1rem;
+}
+
+.stats-chart--empty {
+    padding: 0.9rem 1rem;
+    background: var(--rt-surface-2);
+    border-radius: var(--rt-radius-sm);
+    color: var(--rt-text-dark-dim);
+    font-size: 0.9rem;
+}
+
+.stats-chart__title {
+    font-weight: 700;
+    font-size: 0.92rem;
+    color: var(--rt-text-dark);
+    margin-bottom: 0.35rem;
+}
+
+.stats-chart__plot {
+    position: relative;
+}
+
+.stats-chart__plot svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    touch-action: none;
+}
+
+.stats-chart__grid {
+    stroke: #e2e8e5;
+    stroke-width: 1;
+}
+
+.stats-chart__tick {
+    fill: var(--rt-text-dark-dim);
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+}
+
+.stats-chart__crosshair {
+    stroke: #c4cfca;
+    stroke-width: 1;
+}
+
+.stats-chart__line {
+    fill: none;
+    stroke: var(--rt-accent-strong);
+    stroke-width: 2;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+}
+
+.stats-chart__dot {
+    fill: var(--rt-accent-strong);
+    stroke: var(--rt-surface);
+    stroke-width: 2;
+}
+
+.stats-chart__end-label {
+    fill: var(--rt-text-dark);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.stats-chart__tooltip {
+    position: absolute;
+    top: 4px;
+    transform: translateX(10px);
+    background: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: var(--rt-radius-sm);
+    box-shadow: var(--rt-shadow-sm);
+    padding: 0.4rem 0.6rem;
+    font-size: 0.78rem;
+    color: var(--rt-text-dark-dim);
+    pointer-events: none;
+    white-space: nowrap;
+    z-index: 3;
+}
+
+.stats-chart__tooltip--flip {
+    transform: translateX(calc(-100% - 10px));
+}
+
+.stats-chart__tooltip-value {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--rt-text-dark);
+}
+
+.stats-chart__table summary {
+    cursor: pointer;
+    font-size: 0.82rem;
+    color: var(--rt-text-dark-dim);
+    user-select: none;
+}
+
+.stats-chart__table table {
+    margin-top: 0.5rem;
+    width: 100%;
+    max-height: 220px;
+    font-size: 0.82rem;
+    color: var(--rt-text-dark);
+    border-collapse: collapse;
+}
+
+.stats-chart__table {
+    max-width: 100%;
+}
+
+.stats-chart__table[open] {
+    display: block;
+    max-height: 240px;
+    overflow-y: auto;
+}
+
+.stats-chart__table th,
+.stats-chart__table td {
+    text-align: left;
+    padding: 0.2rem 0.6rem 0.2rem 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    font-variant-numeric: tabular-nums;
+}
+
+.stats-chart__table th {
+    color: var(--rt-text-dark-dim);
+    font-weight: 600;
+}
+
+.stats-backup-row {
+    gap: 0.5rem;
+}
+
+.stats-import-error {
+    color: var(--rt-danger);
+    font-size: 0.85rem;
+    margin-top: 0.4rem;
+}
+
+.stats-storage-note {
+    color: var(--rt-text-dark-dim);
+    font-size: 0.82rem;
+    margin-top: 0.6rem;
+}
+
 /* Round sound toggle button */
 .btn.sound-toggle {
     background: var(--rt-panel) !important;

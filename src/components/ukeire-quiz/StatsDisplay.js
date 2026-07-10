@@ -1,15 +1,19 @@
 import React from 'react';
 import { Container, Collapse, Card, CardBody, Button, Row, Col } from 'reactstrap';
 import { withTranslation } from 'react-i18next';
+import StatsChart from './StatsChart';
 
 class StatsDisplay extends React.Component {
     constructor(props) {
         super(props);
         this.toggleStats = this.toggleStats.bind(this);
         this.toggleConfirm = this.toggleConfirm.bind(this);
+        this.onImportFile = this.onImportFile.bind(this);
+        this.fileInput = React.createRef();
         this.state = {
             statsCollapsed: true,
-            confirmCollapsed: true
+            confirmCollapsed: true,
+            importFailed: false
         };
     }
 
@@ -19,6 +23,26 @@ class StatsDisplay extends React.Component {
 
     toggleConfirm() {
         this.setState({ confirmCollapsed: !this.state.confirmCollapsed });
+    }
+
+    /** Reads the chosen backup file and hands the parsed payload to the trainer. */
+    onImportFile(event) {
+        let file = event.target.files && event.target.files[0];
+        event.target.value = "";
+        if (!file) return;
+
+        let reader = new FileReader();
+        reader.onload = () => {
+            let applied = false;
+            try {
+                applied = this.props.onImport(JSON.parse(reader.result));
+            } catch {
+                applied = false;
+            }
+            this.setState({ importFailed: !applied });
+        };
+        reader.onerror = () => this.setState({ importFailed: true });
+        reader.readAsText(file);
     }
 
     render() {
@@ -43,6 +67,7 @@ class StatsDisplay extends React.Component {
                 <Button color="primary" onClick={this.toggleStats}>{t("stats.buttonLabel")}</Button>
                 <Collapse isOpen={!this.state.statsCollapsed}>
                     <Card><CardBody>
+                        <StatsChart history={this.props.history} />
                         <Row>
                             {t("stats.info")}
                         </Row>
@@ -69,6 +94,27 @@ class StatsDisplay extends React.Component {
                         </Row>
                         <Row>
                             {t("stats.overall", { percent: efficiency, achieved: this.props.values.totalEfficiency, total: this.props.values.totalPossibleEfficiency })}
+                        </Row>
+                        <Row className="mt-3 stats-backup-row">
+                            <Button color="primary" onClick={this.props.onExport}>{t("stats.export")}</Button>
+                            <Button color="secondary" onClick={() => this.fileInput.current && this.fileInput.current.click()}>{t("stats.import")}</Button>
+                            <input
+                                ref={this.fileInput}
+                                type="file"
+                                accept=".json,application/json"
+                                style={{ display: "none" }}
+                                onChange={this.onImportFile}
+                            />
+                        </Row>
+                        {this.state.importFailed &&
+                            <Row className="stats-import-error">
+                                {t("stats.importError")}
+                            </Row>
+                        }
+                        <Row className="stats-storage-note">
+                            {this.props.persistent
+                                ? t("stats.storagePersistent")
+                                : t("stats.storageBestEffort")}
                         </Row>
                         <Row className="mt-4">
                             <Button color="danger" onClick={this.toggleConfirm}>{t("stats.reset")}</Button>
