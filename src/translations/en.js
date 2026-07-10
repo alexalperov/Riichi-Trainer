@@ -163,7 +163,35 @@ export const en = {
             import: "Import Stats",
             importError: "Couldn't read that file. Choose a stats file exported from this trainer.",
             storagePersistent: "This browser has granted persistent storage, so your stats won't be evicted under storage pressure. Clearing site data still removes them — keep an export as a backup.",
-            storageBestEffort: "Stats live in this browser's local storage and vanish if you clear site data. Export them now and then to keep a backup you can import anywhere."
+            storageBestEffort: "Stats live in this browser's local storage and vanish if you clear site data. Export them now and then to keep a backup you can import anywhere.",
+            mistakes: {
+                title: "Mistake patterns",
+                hint: "Every suboptimal discard is categorized by the shape it broke. Rough heuristics — hands can be read multiple ways — but trends are real.",
+                empty: "No suboptimal discards recorded yet. When you make one, the shape you broke gets tallied here.",
+                avgLoss: "costs {{count}} tile of acceptance on average",
+                avgLoss_plural: "costs {{count}} tiles of acceptance on average",
+                betterCut: "the better cut was usually {{shape}}",
+                broke: {
+                    onlyPair: "Broke your only pair (lost the head)",
+                    pair: "Broke a pair",
+                    triplet: "Broke a triplet",
+                    completeRun: "Broke a completed run",
+                    ryanmen: "Broke a ryanmen (open-ended shape)",
+                    kanchan: "Broke a kanchan (closed wait)",
+                    penchan: "Broke a penchan (edge wait)",
+                    floater: "Cut the wrong floater"
+                },
+                shapes: {
+                    onlyPair: "the lone pair",
+                    pair: "a pair",
+                    triplet: "a triplet",
+                    completeRun: "a run tile",
+                    ryanmen: "a ryanmen tile",
+                    kanchan: "a kanchan tile",
+                    penchan: "a penchan tile",
+                    floater: "a floater"
+                }
+            }
         },
         credits: {
             label: "Credits",

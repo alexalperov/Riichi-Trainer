@@ -2,6 +2,7 @@ import React from 'react';
 import { Container, Collapse, Card, CardBody, Button, Row, Col } from 'reactstrap';
 import { withTranslation } from 'react-i18next';
 import StatsChart from './StatsChart';
+import MistakeBreakdown from './MistakeBreakdown';
 
 class StatsDisplay extends React.Component {
     constructor(props) {
@@ -95,6 +96,7 @@ class StatsDisplay extends React.Component {
                         <Row>
                             {t("stats.overall", { percent: efficiency, achieved: this.props.values.totalEfficiency, total: this.props.values.totalPossibleEfficiency })}
                         </Row>
+                        <MistakeBreakdown mistakes={this.props.mistakes} />
                         <Row className="mt-3 stats-backup-row">
                             <Button color="primary" onClick={this.props.onExport}>{t("stats.export")}</Button>
                             <Button color="secondary" onClick={() => this.fileInput.current && this.fileInput.current.click()}>{t("stats.import")}</Button>
