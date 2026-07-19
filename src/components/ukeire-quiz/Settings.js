@@ -23,6 +23,7 @@ class Settings extends React.Component {
                 reshuffle: true,
                 simulate: false,
                 exceptions: true,
+                ukeireCounting: false,
                 minShanten: 0,
                 sort: true,
                 blind: false,
@@ -60,6 +61,7 @@ class Settings extends React.Component {
                     reshuffle: savedSettings.reshuffle,
                     simulate: savedSettings.simulate,
                     exceptions: savedSettings.exceptions,
+                    ukeireCounting: !!savedSettings.ukeireCounting,
                     minShanten: savedSettings.minShanten || 0,
                     sort: savedSettings.sort === undefined ? true : savedSettings.sort,
                     blind: savedSettings.blind,
@@ -199,6 +201,13 @@ class Settings extends React.Component {
                                 <Input className="form-check-input" type="checkbox" id="exceptions"
                                     checked={this.state.settings.exceptions} onChange={this.onSettingChanged} />
                                 <Label className="form-check-label" for="exceptions">{t("settings.exceptions")}</Label>
+                            </Col>
+                        </Row>
+                        <Row>
+                            <Col className="form-check form-check-inline">
+                                <Input className="form-check-input" type="checkbox" id="ukeireCounting"
+                                    checked={this.state.settings.ukeireCounting} onChange={this.onSettingChanged} />
+                                <Label className="form-check-label" for="ukeireCounting">{t("settings.ukeireCounting")}</Label>
                             </Col>
                         </Row>
                         <Row>

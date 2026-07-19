@@ -1,5 +1,5 @@
 import React from 'react';
-import { Container, Row, Button, Col } from 'reactstrap';
+import { Container, Row, Button, Col, Input, InputGroup, InputGroupAddon } from 'reactstrap';
 import Hand from '../components/Hand';
 import History from "../components/History";
 import Settings from '../components/ukeire-quiz/Settings';
@@ -11,7 +11,7 @@ import StatsDisplay from "../components/ukeire-quiz/StatsDisplay";
 import { generateHand, fillHand } from '../scripts/GenerateHand';
 import { calculateDiscardUkeire, calculateUkeireFromOnlyHand } from "../scripts/UkeireCalculator";
 import { calculateMinimumShanten, calculateStandardShanten } from "../scripts/ShantenCalculator";
-import { convertRedFives } from "../scripts/TileConversions";
+import { convertRedFives, getTileAsText } from "../scripts/TileConversions";
 import { convertHandToTenhouString, convertHandToTileIndexArray } from "../scripts/HandConversions";
 import { evaluateBestDiscard } from "../scripts/Evaluations";
 import { shuffleArray, removeRandomItem, getRandomItem } from '../scripts/Utils';
@@ -30,6 +30,8 @@ class UkeireQuiz extends React.Component {
         super(props);
         this.onSettingsChanged = this.onSettingsChanged.bind(this);
         this.onTileClicked = this.onTileClicked.bind(this);
+        this.onCountSubmitted = this.onCountSubmitted.bind(this);
+        this.onTimerExpired = this.onTimerExpired.bind(this);
         this.loadHand = this.onHandLoaded.bind(this);
         this.updateTime = this.onUpdateTime.bind(this);
         this.timerUpdate = null;
@@ -44,13 +46,21 @@ class UkeireQuiz extends React.Component {
             optimalCount: 0,
             achievedTotal: 0,
             possibleTotal: 0,
+            /** Ukeire counting mode: the tile selected for discard, awaiting a count guess. */
+            pendingDiscard: -1,
+            /** Ukeire counting mode: the count the player has typed so far. */
+            countGuess: "",
+            countGuessCount: 0,
+            correctCountCount: 0,
             settings: { /* See ../components/ukeire-quiz/Settings.js */ },
             stats: {
                 totalDiscards: 0,
                 totalTenpai: 0,
                 totalEfficiency: 0,
                 totalPossibleEfficiency: 0,
-                totalOptimalDiscards: 0
+                totalOptimalDiscards: 0,
+                totalCountGuesses: 0,
+                totalCorrectCounts: 0
             },
             /** One record per completed hand: {t: timestamp, d: discards, o: optimal discards, a: achieved ukeire, p: possible ukeire} */
             statsHistory: [],
@@ -89,7 +99,9 @@ class UkeireQuiz extends React.Component {
                     totalTenpai: savedStats.totalTenpai,
                     totalEfficiency: savedStats.totalEfficiency,
                     totalPossibleEfficiency: savedStats.totalPossibleEfficiency,
-                    totalOptimalDiscards: savedStats.totalOptimalDiscards
+                    totalOptimalDiscards: savedStats.totalOptimalDiscards,
+                    totalCountGuesses: savedStats.totalCountGuesses || 0,
+                    totalCorrectCounts: savedStats.totalCorrectCounts || 0
                 };
             }
 
@@ -220,6 +232,10 @@ class UkeireQuiz extends React.Component {
             optimalCount: 0,
             achievedTotal: 0,
             possibleTotal: 0,
+            pendingDiscard: -1,
+            countGuess: "",
+            countGuessCount: 0,
+            correctCountCount: 0,
             history: history,
             isComplete: false,
             lastDraw: lastDraw || shuffle.pop(),
@@ -233,16 +249,19 @@ class UkeireQuiz extends React.Component {
 
         if (this.state.disclaimerSeen && this.state.settings.useTimer) {
             this.timer = setTimeout(
-                () => {
-                    this.onTileClicked({target:{name:this.state.lastDraw}});
-                    this.setState({
-                        currentBonus: 0
-                    });
-                },
+                this.onTimerExpired,
                 (this.state.settings.time + this.state.settings.extraTime + 2) * 1000
             );
             this.timerUpdate = setInterval(this.updateTime, 100);
         }
+    }
+
+    /** Forces a discard of the drawn tile when the timer runs out. */
+    onTimerExpired() {
+        this.executeDiscard(this.state.lastDraw, this.state.settings.ukeireCounting ? this.state.countGuess : null);
+        this.setState({
+            currentBonus: 0
+        });
     }
 
     /** Generates a new hand and fresh game state. */
@@ -374,8 +393,40 @@ class UkeireQuiz extends React.Component {
         return availableTiles;
     }
 
-    /** Discards the clicked tile, adds a message comparing its efficiency with the best tile, and draws a new tile */
+    /**
+     * Handles a click on a hand tile. Normally discards it immediately; in ukeire
+     * counting mode it only selects the tile, and the discard happens when the
+     * player submits their acceptance count.
+     */
     onTileClicked(event) {
+        if (this.state.isComplete) return;
+
+        let chosenTile = parseInt(event.target.name);
+
+        if (this.state.settings.ukeireCounting) {
+            this.setState({
+                pendingDiscard: chosenTile
+            });
+            return;
+        }
+
+        this.executeDiscard(chosenTile, null);
+    }
+
+    /** Submits the player's acceptance count and discards the selected tile. */
+    onCountSubmitted() {
+        if (this.state.isComplete) return;
+        if (this.state.pendingDiscard === -1) return;
+
+        this.executeDiscard(this.state.pendingDiscard, this.state.countGuess);
+    }
+
+    /**
+     * Discards the given tile, adds a message comparing its efficiency with the best tile, and draws a new tile.
+     * @param {TileIndex} chosenTile The tile to discard.
+     * @param {string|null} countGuess The player's guess of the discard's ukeire, or null when not in counting mode.
+     */
+    executeDiscard(chosenTile, countGuess) {
         if (this.timer != null) {
             clearTimeout(this.timer);
             clearInterval(this.timerUpdate);
@@ -384,13 +435,22 @@ class UkeireQuiz extends React.Component {
         let isComplete = this.state.isComplete;
         if (isComplete) return;
 
-        let chosenTile = parseInt(event.target.name);
         let hand = this.state.hand.slice();
         let remainingTiles = this.state.remainingTiles.slice();
 
         let shantenFunction = this.state.settings.exceptions ? calculateMinimumShanten : calculateStandardShanten;
         let ukeire = calculateDiscardUkeire(hand, remainingTiles, shantenFunction);
         let chosenUkeire = ukeire[convertRedFives(chosenTile)];
+
+        // In counting mode, grade the player's acceptance count against the real ukeire.
+        let countingMode = countGuess !== null;
+        let countGuessValue = null;
+        let countCorrect = false;
+        if (countingMode) {
+            countGuessValue = parseInt(countGuess);
+            if (isNaN(countGuessValue)) countGuessValue = -1;
+            countCorrect = countGuessValue === chosenUkeire.value;
+        }
 
         let handString = convertHandToTenhouString(hand);
         let handBeforeDiscard = hand.slice();
@@ -435,6 +495,7 @@ class UkeireQuiz extends React.Component {
             handUkeire,
             players[0].discards.slice()
         );
+        historyData.countGuess = countGuessValue;
 
         let reachedTenpai = false;
         if (shanten <= 0 && handUkeire.value > 0) {
@@ -470,12 +531,7 @@ class UkeireQuiz extends React.Component {
 
                 if (this.state.settings.useTimer) {
                     this.timer = setTimeout(
-                        () => {
-                            this.onTileClicked({target:{name:this.state.lastDraw}});
-                            this.setState({
-                                currentBonus: 0
-                            });
-                        },
+                        this.onTimerExpired,
                         (this.state.settings.time + this.state.currentBonus) * 1000
                     );
                     this.timerUpdate = setInterval(this.updateTime, 100);
@@ -508,6 +564,10 @@ class UkeireQuiz extends React.Component {
             players: players,
             discardCount: this.state.discardCount + 1,
             optimalCount: this.state.optimalCount + (chosenUkeire.value === ukeire[bestTile].value ? 1 : 0),
+            pendingDiscard: -1,
+            countGuess: "",
+            countGuessCount: this.state.countGuessCount + (countingMode ? 1 : 0),
+            correctCountCount: this.state.correctCountCount + (countCorrect ? 1 : 0),
             mistakes: mistakes,
             hasCopied: false,
             achievedTotal: achievedTotal,
@@ -541,6 +601,8 @@ class UkeireQuiz extends React.Component {
         stats.totalEfficiency += this.state.achievedTotal;
         stats.totalPossibleEfficiency += this.state.possibleTotal;
         stats.totalOptimalDiscards += this.state.optimalCount;
+        stats.totalCountGuesses += this.state.countGuessCount;
+        stats.totalCorrectCounts += this.state.correctCountCount;
 
         // Record this hand so progress can be charted over time.
         let statsHistory = this.state.statsHistory.slice();
@@ -549,7 +611,9 @@ class UkeireQuiz extends React.Component {
             d: this.state.discardCount,
             o: this.state.optimalCount,
             a: this.state.achievedTotal,
-            p: this.state.possibleTotal
+            p: this.state.possibleTotal,
+            g: this.state.countGuessCount,
+            c: this.state.correctCountCount
         });
         if (statsHistory.length > 1000) {
             statsHistory = statsHistory.slice(statsHistory.length - 1000);
@@ -581,7 +645,9 @@ class UkeireQuiz extends React.Component {
             totalTenpai: 0,
             totalEfficiency: 0,
             totalPossibleEfficiency: 0,
-            totalOptimalDiscards: 0
+            totalOptimalDiscards: 0,
+            totalCountGuesses: 0,
+            totalCorrectCounts: 0
         };
 
         this.setState({
@@ -636,7 +702,9 @@ class UkeireQuiz extends React.Component {
             totalTenpai: parseInt(data.stats.totalTenpai) || 0,
             totalEfficiency: parseInt(data.stats.totalEfficiency) || 0,
             totalPossibleEfficiency: parseInt(data.stats.totalPossibleEfficiency) || 0,
-            totalOptimalDiscards: parseInt(data.stats.totalOptimalDiscards) || 0
+            totalOptimalDiscards: parseInt(data.stats.totalOptimalDiscards) || 0,
+            totalCountGuesses: parseInt(data.stats.totalCountGuesses) || 0,
+            totalCorrectCounts: parseInt(data.stats.totalCorrectCounts) || 0
         };
 
         let statsHistory = Array.isArray(data.statsHistory)
@@ -758,7 +826,7 @@ class UkeireQuiz extends React.Component {
                 />
                 <ValueTileDisplay roundWind={this.state.roundWind} seatWind={this.state.seatWind} dora={this.state.dora} showIndexes={this.state.settings.showIndexes} />
                 <Row className="mb-2 mt-2">
-                    <span>{t("trainer.instructions")}</span>
+                    <span>{t(this.state.settings.ukeireCounting ? "trainer.counting.instructions" : "trainer.instructions")}</span>
                 </Row>
                 <div className="hand-tray">
                     {this.state.settings.sort
@@ -776,6 +844,33 @@ class UkeireQuiz extends React.Component {
                             blind={blind} />
                     }
                 </div>
+                {this.state.settings.ukeireCounting && !this.state.isComplete &&
+                    <Row className="mt-2">
+                        <Col xs="12" sm="8" md="6">
+                            <InputGroup>
+                                <InputGroupAddon addonType="prepend">
+                                    <span className="input-group-text">
+                                        {this.state.pendingDiscard === -1
+                                            ? t("trainer.counting.noTileSelected")
+                                            : t("trainer.counting.selectedTile", { tile: getTileAsText(t, this.state.pendingDiscard, this.state.settings.verbose) })}
+                                    </span>
+                                </InputGroupAddon>
+                                <Input type="number" min="0"
+                                    value={this.state.countGuess}
+                                    placeholder={t("trainer.counting.guessPlaceholder")}
+                                    onChange={(e) => this.setState({ countGuess: e.target.value })}
+                                    onKeyDown={(e) => { if (e.key === "Enter") this.onCountSubmitted(); }} />
+                                <InputGroupAddon addonType="append">
+                                    <Button color="primary"
+                                        disabled={this.state.pendingDiscard === -1}
+                                        onClick={this.onCountSubmitted}>
+                                        {t("trainer.counting.submitButtonLabel")}
+                                    </Button>
+                                </InputGroupAddon>
+                            </InputGroup>
+                        </Col>
+                    </Row>
+                }
                 <div className="trainer-toolbar">
                     {this.state.settings.useTimer &&
                         <span className="trainer-timer">{this.state.currentTime.toFixed(1)} + {this.state.currentBonus.toFixed(1)}</span>

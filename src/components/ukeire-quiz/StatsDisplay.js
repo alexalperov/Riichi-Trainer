@@ -61,6 +61,10 @@ class StatsDisplay extends React.Component {
         if (isNaN(averageDiscards)) averageDiscards = 0;
         averageDiscards = Math.round(averageDiscards * 10) / 10;
 
+        let totalCountGuesses = this.props.values.totalCountGuesses || 0;
+        let totalCorrectCounts = this.props.values.totalCorrectCounts || 0;
+        let countAccuracy = totalCountGuesses > 0 ? Math.round(totalCorrectCounts / totalCountGuesses * 100) : 0;
+
         let { t } = this.props;
 
         return (
@@ -96,6 +100,11 @@ class StatsDisplay extends React.Component {
                         <Row>
                             {t("stats.overall", { percent: efficiency, achieved: this.props.values.totalEfficiency, total: this.props.values.totalPossibleEfficiency })}
                         </Row>
+                        {totalCountGuesses > 0 &&
+                            <Row>
+                                {t("stats.countAccuracy", { percent: countAccuracy, achieved: totalCorrectCounts, total: totalCountGuesses })}
+                            </Row>
+                        }
                         <MistakeBreakdown mistakes={this.props.mistakes} />
                         <Row className="mt-3 stats-backup-row">
                             <Button color="primary" onClick={this.props.onExport}>{t("stats.export")}</Button>

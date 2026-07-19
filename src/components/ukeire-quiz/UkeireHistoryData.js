@@ -15,6 +15,8 @@ export default class UkeireHistoryData extends HistoryData {
         this.handUkeire = handUkeire;
         this.discards = discards;
         this.drawnTile = drawnTile;
+        /** Ukeire counting mode: the player's guessed acceptance count. null = not counting, -1 = no guess entered. */
+        this.countGuess = null;
     }
 
     getMessage(t, concise, verbose, spoilers) {
@@ -31,6 +33,15 @@ export default class UkeireHistoryData extends HistoryData {
             result += t(`history.${mode}.loweredShanten`)
         }
 
+        if (this.countGuess != null) {
+            if (this.countGuess < 0) {
+                result += t(`history.${mode}.countMissing`, { count: this.chosenUkeire.value });
+            } else if (this.countGuess === this.chosenUkeire.value) {
+                result += t(`history.${mode}.countCorrect`, { count: this.chosenUkeire.value });
+            } else {
+                result += t(`history.${mode}.countIncorrect`, { guess: this.countGuess, count: this.chosenUkeire.value });
+            }
+        }
 
         if (this.chosenUkeire.value < this.bestUkeire.value) {
             result += t(`history.${mode}.optimal`);
@@ -89,6 +100,11 @@ export default class UkeireHistoryData extends HistoryData {
             className = CSS_CLASSES.CORRECT;
         }
         else {
+            className = CSS_CLASSES.WARNING;
+        }
+
+        // A perfect discard with a wrong acceptance count is only half right.
+        if (className === CSS_CLASSES.CORRECT && this.countGuess != null && this.countGuess !== this.chosenUkeire.value) {
             className = CSS_CLASSES.WARNING;
         }
 
