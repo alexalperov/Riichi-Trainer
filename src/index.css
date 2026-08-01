@@ -783,6 +783,14 @@ input[type="number"]:focus,
     margin-bottom: 0.15rem;
 }
 
+.shape-mistake-breakdown__formula {
+    display: block;
+    margin-top: 0.08rem;
+    color: var(--rt-text-dark-dim);
+    font-size: 0.76rem;
+    font-weight: 400;
+}
+
 .mistake-breakdown__bar-track {
     display: flex;
     align-items: center;

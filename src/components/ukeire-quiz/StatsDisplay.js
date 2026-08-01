@@ -3,6 +3,7 @@ import { Container, Collapse, Card, CardBody, Button, Row, Col } from 'reactstra
 import { withTranslation } from 'react-i18next';
 import StatsChart from './StatsChart';
 import MistakeBreakdown from './MistakeBreakdown';
+import ShapeMistakeBreakdown from './ShapeMistakeBreakdown';
 
 class StatsDisplay extends React.Component {
     constructor(props) {
@@ -106,6 +107,7 @@ class StatsDisplay extends React.Component {
                             </Row>
                         }
                         <MistakeBreakdown mistakes={this.props.mistakes} />
+                        <ShapeMistakeBreakdown mistakes={this.props.shapeMistakes} />
                         <Row className="mt-3 stats-backup-row">
                             <Button color="primary" onClick={this.props.onExport}>{t("stats.export")}</Button>
                             <Button color="secondary" onClick={() => this.fileInput.current && this.fileInput.current.click()}>{t("stats.import")}</Button>

@@ -23,7 +23,7 @@ import LocalizedMessage from '../models/LocalizedMessage';
 import UkeireHistoryData from '../components/ukeire-quiz/UkeireHistoryData';
 import HistoryData from '../models/HistoryData';
 import { playTileClack, playTenpaiChime } from '../scripts/TileSounds';
-import { recordMistake } from '../scripts/MistakeAnalysis';
+import { recordMistake, recordPresentShapeMistake } from '../scripts/MistakeAnalysis';
 
 class UkeireQuiz extends React.Component {
     constructor(props) {
@@ -66,6 +66,8 @@ class UkeireQuiz extends React.Component {
             statsHistory: [],
             /** Aggregate of suboptimal discards keyed by the shape they broke: {count, lost, best: {shape: count}} */
             mistakes: {},
+            /** Every requested wait shape present in each mistake hand: {count, lost}. */
+            shapeMistakes: {},
             storagePersistent: null,
             history: [],
             isComplete: false,
@@ -118,6 +120,14 @@ class UkeireQuiz extends React.Component {
                 savedMistakes = JSON.parse(savedMistakes);
                 if (savedMistakes && typeof savedMistakes === "object" && !Array.isArray(savedMistakes)) {
                     newState.mistakes = savedMistakes;
+                }
+            }
+
+            let savedShapeMistakes = window.localStorage.getItem("shapeMistakeStats");
+            if (savedShapeMistakes) {
+                savedShapeMistakes = JSON.parse(savedShapeMistakes);
+                if (savedShapeMistakes && typeof savedShapeMistakes === "object" && !Array.isArray(savedShapeMistakes)) {
+                    newState.shapeMistakes = savedShapeMistakes;
                 }
             }
 
@@ -460,8 +470,10 @@ class UkeireQuiz extends React.Component {
         let handUkeire = calculateUkeireFromOnlyHand(hand, this.getStartingTiles(), shantenFunction);
         let bestTile = evaluateBestDiscard(ukeire, this.state.dora + 1);
 
-        // Categorize suboptimal discards by the shape they broke.
+        // Track both the shape broken and every requested wait shape that
+        // existed anywhere in the hand before the suboptimal discard.
         let mistakes = this.state.mistakes;
+        let shapeMistakes = this.state.shapeMistakes;
         if (chosenUkeire.value < ukeire[bestTile].value) {
             mistakes = recordMistake(
                 mistakes,
@@ -470,9 +482,15 @@ class UkeireQuiz extends React.Component {
                 bestTile,
                 ukeire[bestTile].value - chosenUkeire.value
             );
+            shapeMistakes = recordPresentShapeMistake(
+                shapeMistakes,
+                handBeforeDiscard,
+                ukeire[bestTile].value - chosenUkeire.value
+            );
 
             try {
                 window.localStorage.setItem("mistakeStats", JSON.stringify(mistakes));
+                window.localStorage.setItem("shapeMistakeStats", JSON.stringify(shapeMistakes));
             } catch { }
         }
 
@@ -569,6 +587,7 @@ class UkeireQuiz extends React.Component {
             countGuessCount: this.state.countGuessCount + (countingMode ? 1 : 0),
             correctCountCount: this.state.correctCountCount + (countCorrect ? 1 : 0),
             mistakes: mistakes,
+            shapeMistakes: shapeMistakes,
             hasCopied: false,
             achievedTotal: achievedTotal,
             possibleTotal: possibleTotal,
@@ -653,13 +672,15 @@ class UkeireQuiz extends React.Component {
         this.setState({
             stats: stats,
             statsHistory: [],
-            mistakes: {}
+            mistakes: {},
+            shapeMistakes: {}
         });
 
         try {
             window.localStorage.setItem("stats", JSON.stringify(stats));
             window.localStorage.setItem("statsHistory", "[]");
             window.localStorage.setItem("mistakeStats", "{}");
+            window.localStorage.setItem("shapeMistakeStats", "{}");
         } catch { }
     }
 
@@ -668,11 +689,12 @@ class UkeireQuiz extends React.Component {
         try {
             let payload = {
                 app: "riichi-trainer",
-                version: 1,
+                version: 2,
                 exportedAt: new Date().toISOString(),
                 stats: this.state.stats,
                 statsHistory: this.state.statsHistory,
-                mistakes: this.state.mistakes
+                mistakes: this.state.mistakes,
+                shapeMistakes: this.state.shapeMistakes
             };
 
             let blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
@@ -715,16 +737,22 @@ class UkeireQuiz extends React.Component {
             ? data.mistakes
             : {};
 
+        let shapeMistakes = data.shapeMistakes && typeof data.shapeMistakes === "object" && !Array.isArray(data.shapeMistakes)
+            ? data.shapeMistakes
+            : {};
+
         this.setState({
             stats: stats,
             statsHistory: statsHistory,
-            mistakes: mistakes
+            mistakes: mistakes,
+            shapeMistakes: shapeMistakes
         });
 
         try {
             window.localStorage.setItem("stats", JSON.stringify(stats));
             window.localStorage.setItem("statsHistory", JSON.stringify(statsHistory));
             window.localStorage.setItem("mistakeStats", JSON.stringify(mistakes));
+            window.localStorage.setItem("shapeMistakeStats", JSON.stringify(shapeMistakes));
         } catch { }
 
         return true;
@@ -819,6 +847,7 @@ class UkeireQuiz extends React.Component {
                     values={this.state.stats}
                     history={this.state.statsHistory}
                     mistakes={this.state.mistakes}
+                    shapeMistakes={this.state.shapeMistakes}
                     persistent={this.state.storagePersistent}
                     onReset={() => this.resetStats()}
                     onExport={() => this.exportStats()}

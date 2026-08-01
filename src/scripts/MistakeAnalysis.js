@@ -1,5 +1,121 @@
 import { convertRedFives } from './TileConversions';
 
+/** Stable display/storage order for wait shapes found anywhere in a mistake hand. */
+export const PRESENT_WAIT_SHAPES = [
+    "tanki",
+    "aryanmen",
+    "ryantan",
+    "kantan",
+    "pentan",
+    "nobetan",
+    "sanmenchan",
+    "entotsu",
+    "sanmenNobetan",
+    "tatsumaki",
+    "happoubijin"
+];
+
+/** Whether a suited rank pattern exists at a 1-based starting rank. */
+function patternAt(suitCounts, start, requirements) {
+    for (let offset = 0; offset < requirements.length; offset++) {
+        if (suitCounts[start + offset] < requirements[offset]) return false;
+    }
+    return true;
+}
+
+/** Whether a pattern exists within the inclusive range of valid starts. */
+function hasPattern(suitCounts, requirements, minStart, maxStart) {
+    for (let start = minStart; start <= maxStart; start++) {
+        if (patternAt(suitCounts, start, requirements)) return true;
+    }
+    return false;
+}
+
+/** Entotsu needs a separate pair outside its five-tile suited core. */
+function hasPairOutside(hand, excludedTiles) {
+    for (let tile = 1; tile < hand.length; tile++) {
+        if (tile % 10 === 0 || excludedTiles.indexOf(tile) >= 0) continue;
+        if (hand[tile] >= 2) return true;
+    }
+    return false;
+}
+
+/** Detects either orientation of entotsu in one suit. */
+function hasEntotsu(hand, suitBase, suitCounts) {
+    // XXX (X+1) (X+2) + YY; X+3 must remain a valid winning rank.
+    for (let start = 1; start <= 6; start++) {
+        if (patternAt(suitCounts, start, [3, 1, 1]) &&
+            hasPairOutside(hand, [suitBase + start, suitBase + start + 1, suitBase + start + 2])) {
+            return true;
+        }
+    }
+
+    // (X-2) (X-1) XXX + YY; X-3 must remain a valid winning rank.
+    for (let start = 2; start <= 7; start++) {
+        if (patternAt(suitCounts, start, [1, 1, 3]) &&
+            hasPairOutside(hand, [suitBase + start, suitBase + start + 1, suitBase + start + 2])) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/**
+ * Finds every requested wait shape that exists anywhere in a hand.
+ * A shape is returned at most once even when it occurs in multiple suits.
+ * Red fives are merged into their ordinary five before pattern matching.
+ *
+ * @param {TileCounts} handCounts The hand before the mistaken discard.
+ * @returns {string[]} Shape keys in PRESENT_WAIT_SHAPES order.
+ */
+export function detectPresentWaitShapes(handCounts) {
+    let hand = convertRedFives(handCounts.slice());
+    let found = {};
+
+    // A tanki is represented by an actual singleton, not one tile borrowed
+    // from a pair/triplet. This keeps the category meaningful.
+    for (let tile = 1; tile < hand.length; tile++) {
+        if (tile % 10 !== 0 && hand[tile] === 1) {
+            found.tanki = true;
+            break;
+        }
+    }
+
+    for (let suit = 0; suit < 3; suit++) {
+        let suitBase = suit * 10;
+        let counts = Array(10).fill(0);
+        for (let rank = 1; rank <= 9; rank++) counts[rank] = hand[suitBase + rank];
+
+        // XX (X+1) (X+2), plus the mirrored form. Starts are limited so
+        // every winning rank stated by the shape remains between 1 and 9.
+        if (hasPattern(counts, [2, 1, 1], 1, 6) || hasPattern(counts, [1, 1, 2], 2, 7)) {
+            found.aryanmen = true;
+        }
+
+        if (hasPattern(counts, [3, 1], 2, 7) || hasPattern(counts, [1, 3], 2, 7)) {
+            found.ryantan = true;
+        }
+
+        if (hasPattern(counts, [3, 0, 1], 1, 7) || hasPattern(counts, [1, 0, 3], 1, 7)) {
+            found.kantan = true;
+        }
+
+        if (patternAt(counts, 1, [3, 1]) || patternAt(counts, 8, [1, 3])) {
+            found.pentan = true;
+        }
+
+        if (hasPattern(counts, [1, 1, 1, 1], 1, 6)) found.nobetan = true;
+        if (hasPattern(counts, [1, 1, 1, 1, 1], 2, 4)) found.sanmenchan = true;
+        if (hasEntotsu(hand, suitBase, counts)) found.entotsu = true;
+        if (hasPattern(counts, [1, 1, 1, 1, 1, 1, 1], 1, 3)) found.sanmenNobetan = true;
+        if (hasPattern(counts, [3, 1, 3], 2, 6)) found.tatsumaki = true;
+        if (hasPattern(counts, [3, 1, 1, 1, 1, 3], 2, 3)) found.happoubijin = true;
+    }
+
+    return PRESENT_WAIT_SHAPES.filter((shape) => found[shape]);
+}
+
 /**
  * Heuristics for describing what a discarded tile was doing in the hand.
  * Hands are ambiguous (a tile can sit in several interpretations at once),
@@ -87,6 +203,30 @@ export function recordMistake(mistakes, handBefore, chosenTile, bestTile, ukeire
     entry.lost += ukeireLost;
     entry.best[better] = (entry.best[better] || 0) + 1;
     updated[broke] = entry;
+
+    return updated;
+}
+
+/**
+ * Records one suboptimal discard against every requested shape present in
+ * the pre-discard hand. Multiple occurrences of one shape still add only one
+ * count, while a hand containing several different shapes increments each.
+ *
+ * @param {Object} shapeMistakes Aggregate keyed by PRESENT_WAIT_SHAPES.
+ * @param {TileCounts} handBefore The hand before the mistaken discard.
+ * @param {number} ukeireLost How much acceptance the mistake cost.
+ * @returns {Object} The updated aggregate.
+ */
+export function recordPresentShapeMistake(shapeMistakes, handBefore, ukeireLost) {
+    let updated = Object.assign({}, shapeMistakes);
+
+    detectPresentWaitShapes(handBefore).forEach((shape) => {
+        let previous = updated[shape] || { count: 0, lost: 0 };
+        updated[shape] = {
+            count: previous.count + 1,
+            lost: previous.lost + ukeireLost
+        };
+    });
 
     return updated;
 }
