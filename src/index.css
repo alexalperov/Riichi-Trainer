@@ -420,42 +420,74 @@ input[type="number"]:focus,
 
 .tile {
     position: relative;
+    isolation: isolate;
     width: 100%;
     aspect-ratio: 300 / 400;
     background: linear-gradient(155deg, #fffdf7 0%, #f7f2e6 62%, #ebe3cf 100%);
+    border: max(1px, 0.8cqw) solid rgba(103, 83, 48, 0.22);
     border-radius: 10cqw / 7.5cqw;
     box-shadow:
+        inset 1.5cqw 1.5cqw 2cqw rgba(255, 255, 255, 0.72),
+        inset -1.5cqw -2cqw 3.5cqw rgba(103, 83, 48, 0.10),
         0 4.5cqw 0 -1cqw #d8cdb4,
         0 9cqw 0 -1.5cqw #17685c,
         0 12cqw 16cqw rgba(0, 0, 0, 0.38);
-    transition: box-shadow var(--rt-ease);
+    transition: transform var(--rt-ease), box-shadow var(--rt-ease), filter var(--rt-ease);
+}
+
+/* A fine highlight around the face makes it read as a polished tile rather
+   than a flat image. It is deliberately subtle so the SVG art stays crisp. */
+.tile::before {
+    content: "";
+    position: absolute;
+    z-index: 2;
+    inset: 0;
+    border-radius: inherit;
+    box-shadow:
+        inset 0 0 0 1cqw rgba(255, 255, 255, 0.28),
+        inset 0 -3cqw 5cqw rgba(82, 61, 31, 0.06);
+    pointer-events: none;
 }
 
 .tile-face {
     position: absolute;
+    z-index: 1;
     inset: 0;
     width: 100%;
     height: 100%;
     object-fit: contain;
     border-radius: inherit;
+    filter: drop-shadow(0 0.8cqw 0.45cqw rgba(57, 42, 20, 0.13));
+    transition: filter var(--rt-ease), transform var(--rt-ease);
     -webkit-user-select: none;
     user-select: none;
     -webkit-tap-highlight-color: transparent;
 }
 
-/* Face-down tile (blind mode): jade back with an ivory rim */
+/* Face-down tile (blind mode). Back.svg is part of the supplied tile set;
+   keep its cheerful red face visible instead of replacing it in CSS. */
 .tile--back {
-    background:
-        linear-gradient(155deg, #2ba18d 0%, #1d7a6b 55%, #14584e 100%);
+    background: linear-gradient(155deg, #ff4b45 0%, #f52f32 58%, #c91f27 100%);
+    border-color: rgba(118, 18, 25, 0.38);
     box-shadow:
-        inset 0 0 0 2.5cqw rgba(255, 255, 255, 0.22),
+        inset 1.5cqw 1.5cqw 2cqw rgba(255, 255, 255, 0.28),
+        inset -1.5cqw -2cqw 3.5cqw rgba(88, 6, 14, 0.18),
         0 4.5cqw 0 -1cqw #d8cdb4,
         0 9cqw 0 -1.5cqw #17685c,
         0 12cqw 16cqw rgba(0, 0, 0, 0.38);
 }
 
 .tile--back .tile-face {
-    opacity: 0;
+    opacity: 1;
+    filter: saturate(0.96) brightness(0.98);
+}
+
+/* The three aka dora use their dedicated SVGs. A faint warm reflection helps
+   those special assets feel prized without adding a noisy badge. */
+.tile--red-five .tile-face {
+    filter:
+        drop-shadow(0 0.8cqw 0.45cqw rgba(119, 18, 20, 0.18))
+        drop-shadow(0 0 4cqw rgba(229, 55, 55, 0.10));
 }
 
 /* Lift hand tiles on hover (only where a pointer can hover) */
@@ -471,17 +503,41 @@ input[type="number"]:focus,
     }
 
     .handTile:hover .tile {
+        transform: translateY(-1.5cqw);
         box-shadow:
+            inset 1.5cqw 1.5cqw 2cqw rgba(255, 255, 255, 0.78),
+            inset -1.5cqw -2cqw 3.5cqw rgba(103, 83, 48, 0.08),
             0 4.5cqw 0 -1cqw #d8cdb4,
             0 9cqw 0 -1.5cqw #17685c,
             0 22cqw 24cqw rgba(0, 0, 0, 0.45);
+    }
+
+    .handTile:hover .tile-face {
+        filter: drop-shadow(0 1.1cqw 0.7cqw rgba(57, 42, 20, 0.16));
+    }
+
+    .handTile:hover .tile--red-five .tile-face {
+        filter:
+            drop-shadow(0 1.1cqw 0.7cqw rgba(119, 18, 20, 0.20))
+            drop-shadow(0 0 6cqw rgba(229, 55, 55, 0.18));
     }
 }
 
 /* Press feedback when discarding */
 .handTile:active {
-    transform: translateY(-2px) scale(0.96);
+    transform: translateY(-1px) scale(0.97);
     filter: brightness(0.98);
+    transition-duration: 60ms;
+}
+
+.handTile:active .tile {
+    transform: translateY(4cqw);
+    box-shadow:
+        inset 1.5cqw 1.5cqw 2cqw rgba(255, 255, 255, 0.68),
+        inset -1.5cqw -2cqw 3.5cqw rgba(103, 83, 48, 0.12),
+        0 2.5cqw 0 -1cqw #d8cdb4,
+        0 5cqw 0 -1.5cqw #17685c,
+        0 7cqw 9cqw rgba(0, 0, 0, 0.34);
     transition-duration: 60ms;
 }
 
@@ -525,6 +581,8 @@ input[type="number"]:focus,
 .discardTile .tile {
     border-radius: 9cqw / 7cqw;
     box-shadow:
+        inset 1.5cqw 1.5cqw 2cqw rgba(255, 255, 255, 0.68),
+        inset -1.5cqw -2cqw 3.5cqw rgba(103, 83, 48, 0.09),
         0 3cqw 0 -0.5cqw #d8cdb4,
         0 6cqw 0 -1cqw #17685c,
         0 6cqw 8cqw rgba(0, 0, 0, 0.3);

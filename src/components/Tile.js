@@ -13,6 +13,14 @@ function getIndexSuitClass(index) {
     return 'tile-index--sou';
 }
 
+/** Returns visual modifiers that depend on the actual face asset. */
+function getTileFaceClass(index) {
+    if (index === 30) return ' tile--back';
+    if (index < 30 && index % 10 === 0) return ' tile--red-five';
+    if (index >= 31) return ' tile--honor';
+    return '';
+}
+
 function Tile(props) {
     let { t } = useTranslation();
 
@@ -20,9 +28,7 @@ function Tile(props) {
 
     let label = TILE_INDEXES[displayTile];
     let showBadge = props.showIndexes && label != null && String(label).trim() !== "";
-    let isBack = displayTile === 30;
-
-    let bodyClass = "tile" + (isBack ? " tile--back" : "");
+    let bodyClass = "tile" + getTileFaceClass(displayTile);
     let wrapperClass = props.className + (props.isDraw ? " handTile--draw" : "");
 
     return (
