@@ -43,7 +43,7 @@ import { convertHandToTenhouString } from './HandConversions';
 import { SUIT_CHARACTERS, ASCII_TILES } from '../Constants';
 import { characterToSuit } from './Utils';
 
-/** Array of png images for each tile. */
+/** Complete 38-entry face-asset map, including red fives and the tile back. */
 const images = [
     redFiveMan, oneMan, twoMan, threeMan, fourMan, fiveMan, sixMan, sevenMan, eightMan, nineMan,
     redFivePin, onePin, twoPin, threePin, fourPin, fivePin, sixPin, sevenPin, eightPin, ninePin,
@@ -59,9 +59,9 @@ const suitKeys = ["suits.characters", "suits.circles", "suits.bamboo"];
 const honorKeys = ["values.hidden", "values.east", "values.south", "values.west", "values.north", "values.white", "values.green", "values.red"];
 
 /**
- * Gets the png image for the given tile index for use in src tags.
+ * Gets the SVG face asset for the given tile index for use in src tags.
  * @param {TileIndex} index The tile index.
- * @returns {string} Tile image png, for use in src tags.
+ * @returns {string} Tile image URL, for use in src tags.
  */
 export function getTileImage(index) {
     return images[index];
