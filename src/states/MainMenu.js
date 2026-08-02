@@ -8,6 +8,7 @@ import Shanten from './Shanten';
 import SouthFourQuiz from './SouthFourQuiz';
 import { withTranslation } from "react-i18next";
 import DefenseState from './DefenseState';
+import HardModeQuiz from './HardModeQuiz';
 
 const STATES = {
     UKEIRE: 0,
@@ -17,6 +18,7 @@ const STATES = {
     SOUTH_FOUR: 4,
     DEFENSE: 5,
     SHANTEN: 6,
+    HARD_MODE: 7,
 };
 
 class MainMenu extends React.Component {
@@ -64,12 +66,15 @@ class MainMenu extends React.Component {
                 page = <DefenseState />; break;
             case STATES.SHANTEN:
                 page = <Shanten />; break;
+            case STATES.HARD_MODE:
+                page = <HardModeQuiz />; break;
             default:
                 page = <UkeireQuiz />;
         }
 
         const tabs = [
             { id: STATES.UKEIRE, label: t("menu.trainer") },
+            { id: STATES.HARD_MODE, label: t("menu.hardMode") },
             { id: STATES.REPLAY, label: t("menu.analyzer") },
             { id: STATES.SOUTH_FOUR, label: t("menu.allLast") },
             { id: STATES.DEFENSE, label: t("menu.defense") },

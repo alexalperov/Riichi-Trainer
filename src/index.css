@@ -783,6 +783,211 @@ input[type="number"]:focus,
     margin-bottom: 0.15rem;
 }
 
+/* ------------------------------------------------------------------ */
+/* Complex-shape hard mode                                            */
+/* ------------------------------------------------------------------ */
+
+.hard-mode-page {
+    max-width: 1080px;
+}
+
+.hard-mode-hero {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+    margin-bottom: 1rem;
+    padding: 1.15rem 1.25rem;
+    background: linear-gradient(135deg, rgba(180, 83, 9, 0.34), rgba(13, 148, 136, 0.18));
+    border: 1px solid rgba(245, 196, 81, 0.3);
+    border-radius: var(--rt-radius);
+    box-shadow: var(--rt-shadow);
+}
+
+.hard-mode-hero h2 {
+    margin: 0.55rem 0 0.25rem;
+    font-size: 1.45rem;
+}
+
+.hard-mode-hero p {
+    max-width: 650px;
+    margin: 0;
+    color: var(--rt-text-dim);
+}
+
+.hard-mode-score {
+    display: flex;
+    flex: 0 0 auto;
+    gap: 0.55rem;
+}
+
+.hard-mode-score div {
+    min-width: 72px;
+    padding: 0.55rem 0.65rem;
+    text-align: center;
+    background: rgba(0, 0, 0, 0.22);
+    border-radius: var(--rt-radius-sm);
+}
+
+.hard-mode-score strong,
+.hard-mode-score span {
+    display: block;
+}
+
+.hard-mode-score strong {
+    font-size: 1.15rem;
+}
+
+.hard-mode-score span {
+    color: var(--rt-text-dim);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.hard-mode-search .card-body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    min-height: 180px;
+}
+
+.hard-mode-search h3,
+.hard-mode-search p {
+    margin-bottom: 0.2rem;
+}
+
+.hard-mode-spinner {
+    width: 34px;
+    height: 34px;
+    border: 4px solid #cbd5d1;
+    border-top-color: var(--rt-accent-strong);
+    border-radius: 50%;
+    animation: hard-mode-spin 800ms linear infinite;
+}
+
+@keyframes hard-mode-spin {
+    to { transform: rotate(360deg); }
+}
+
+.hard-mode-table,
+.hard-mode-coach {
+    height: 100%;
+}
+
+.hard-mode-table h3,
+.hard-mode-coach h3 {
+    margin: 0.8rem 0 0.25rem;
+}
+
+.hard-mode-table p,
+.hard-mode-coach p,
+.hard-mode-table span,
+.hard-mode-coach span {
+    color: var(--rt-text-dark-dim);
+}
+
+.hard-mode-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.hard-mode-meta span {
+    padding: 0.25rem 0.6rem;
+    background: var(--rt-surface-2);
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+.hard-mode-hand {
+    background: linear-gradient(180deg, #123b34, #09251f);
+    border-color: rgba(13, 148, 136, 0.45);
+}
+
+.hard-mode-hand--locked .handTile {
+    pointer-events: none;
+}
+
+.hard-mode-feedback {
+    margin-top: 1rem;
+    padding: 0.9rem 1rem;
+    border-left: 4px solid var(--rt-success);
+    background: #ecfdf5;
+    border-radius: var(--rt-radius-sm);
+}
+
+.hard-mode-feedback.is-wrong {
+    border-left-color: var(--rt-danger);
+    background: #fef2f2;
+}
+
+.hard-mode-feedback h3 {
+    margin-top: 0;
+}
+
+.hard-mode-mystery {
+    display: grid;
+    place-items: center;
+    width: 92px;
+    height: 92px;
+    margin: 1.25rem auto;
+    color: var(--rt-warning);
+    background: var(--rt-surface-2);
+    border: 2px dashed #cbd5d1;
+    border-radius: 50%;
+    font-size: 2.5rem;
+    font-weight: 800;
+}
+
+.hard-mode-shape {
+    margin: 0.8rem 0;
+    padding: 0.75rem;
+    background: var(--rt-surface-2);
+    border-radius: var(--rt-radius-sm);
+}
+
+.hard-mode-shape strong,
+.hard-mode-shape span,
+.hard-mode-shape small {
+    display: block;
+    color: var(--rt-text-dark);
+}
+
+.hard-mode-shape span,
+.hard-mode-shape small {
+    margin-top: 0.2rem;
+    color: var(--rt-text-dark-dim);
+}
+
+.hard-mode-coach .btn {
+    width: 100%;
+    margin-top: 0.5rem;
+}
+
+@media (max-width: 767.98px) {
+    .hard-mode-hero {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .hard-mode-score {
+        justify-content: stretch;
+    }
+
+    .hard-mode-score div {
+        flex: 1 1 0;
+        min-width: 0;
+    }
+
+    .hard-mode-coach {
+        margin-top: 1rem;
+        height: auto;
+    }
+}
+
 .shape-mistake-breakdown__formula {
     display: block;
     margin-top: 0.08rem;
