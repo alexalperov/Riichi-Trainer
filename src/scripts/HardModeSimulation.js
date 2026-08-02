@@ -2,7 +2,6 @@ import { ALL_TILES_REMAINING } from '../Constants';
 import { calculateDiscardUkeire } from './UkeireCalculator';
 import { calculateMinimumShanten } from './ShantenCalculator';
 import { convertRedFives } from './TileConversions';
-import { detectPresentWaitShapes } from './MistakeAnalysis';
 
 /** Shapes rare enough to make a useful hard-mode interruption. */
 export const HARD_MODE_SHAPES = [
@@ -68,25 +67,100 @@ export function resolveHardModeDiscard(hand, normalizedTile) {
     return normalizedTile;
 }
 
-function shapesAfterDiscard(hand, tile) {
+function patternAt(counts, start, requirements) {
+    for (let offset = 0; offset < requirements.length; offset++) {
+        if (counts[start + offset] < requirements[offset]) return false;
+    }
+    return true;
+}
+
+function addPatternOccurrences(occurrences, counts, suitBase, shape, requirements, minStart, maxStart) {
+    for (let start = minStart; start <= maxStart; start++) {
+        if (!patternAt(counts, start, requirements)) continue;
+        occurrences.push({
+            shape,
+            suitBase,
+            start,
+            end: start + requirements.length - 1,
+            relevantTiles: requirements.map((_, offset) => suitBase + start + offset)
+        });
+    }
+}
+
+/** Returns concrete occurrences, including the tiles that make each shape work. */
+function createdShapeOccurrences(handCounts) {
+    let hand = convertRedFives(handCounts);
+    let occurrences = [];
+
+    for (let suit = 0; suit < 3; suit++) {
+        let suitBase = suit * 10;
+        let counts = Array(10).fill(0);
+        for (let rank = 1; rank <= 9; rank++) counts[rank] = hand[suitBase + rank];
+
+        addPatternOccurrences(occurrences, counts, suitBase, 'nobetan', [1, 1, 1, 1], 1, 6);
+        addPatternOccurrences(occurrences, counts, suitBase, 'sanmenchan', [1, 1, 1, 1, 1], 2, 4);
+        addPatternOccurrences(occurrences, counts, suitBase, 'sanmenNobetan', [1, 1, 1, 1, 1, 1, 1], 1, 3);
+        addPatternOccurrences(occurrences, counts, suitBase, 'tatsumaki', [3, 1, 3], 2, 6);
+        addPatternOccurrences(occurrences, counts, suitBase, 'happoubijin', [3, 1, 1, 1, 1, 3], 2, 3);
+
+        // Entotsu also depends on a pair outside its five-tile suited core.
+        [[3, 1, 1, 1, 6], [1, 1, 3, 2, 7]].forEach((definition) => {
+            let requirements = definition.slice(0, 3);
+            let minStart = definition[3];
+            let maxStart = definition[4];
+            for (let start = minStart; start <= maxStart; start++) {
+                if (!patternAt(counts, start, requirements)) continue;
+                let core = requirements.map((_, offset) => suitBase + start + offset);
+                for (let pairTile = 1; pairTile < hand.length; pairTile++) {
+                    if (pairTile % 10 === 0 || core.indexOf(pairTile) >= 0 || hand[pairTile] < 2) continue;
+                    occurrences.push({
+                        shape: 'entotsu',
+                        suitBase,
+                        start,
+                        end: start + 2,
+                        relevantTiles: core.concat(pairTile)
+                    });
+                }
+            }
+        });
+    }
+
+    return occurrences;
+}
+
+function discardCreatesOccurrence(tile, occurrence) {
+    let normalized = convertRedFives(tile);
+    if (occurrence.relevantTiles.indexOf(normalized) >= 0) return true;
+    if (normalized >= 30 || Math.floor(normalized / 10) * 10 !== occurrence.suitBase) return false;
+    let rank = normalized % 10;
+    return rank === occurrence.start - 1 || rank === occurrence.end + 1;
+}
+
+function shapesCreatedByDiscard(hand, tile) {
     let result = hand.slice();
     result[resolveHardModeDiscard(result, tile)]--;
-    return detectPresentWaitShapes(result);
+    let found = {};
+
+    createdShapeOccurrences(result).forEach((occurrence) => {
+        if (discardCreatesOccurrence(tile, occurrence)) found[occurrence.shape] = true;
+    });
+
+    return HARD_MODE_SHAPES.filter((shape) => found[shape]);
 }
 
 /**
- * Keeps only shapes that every optimal discard preserves and at least one
- * plausible inferior discard breaks. This avoids stopping merely because a
- * pattern happens to exist in an unrelated corner of the hand.
+ * Finds shapes formed by making the optimal discard itself. Every equally
+ * optimal choice must create a complex result, preventing an unrelated outside
+ * cut from qualifying just because it leaves a pre-existing block untouched.
  */
-export function findDecisionShapes(hand, bestTiles, inferiorTiles) {
-    let present = detectPresentWaitShapes(hand).filter((shape) => HARD_MODE_SHAPES.indexOf(shape) >= 0);
+export function findCreatedDecisionShapes(hand, bestTiles) {
+    if (!bestTiles.length) return [];
+    let createdByBest = bestTiles.map((tile) => shapesCreatedByDiscard(hand, tile));
+    if (createdByBest.some((shapes) => shapes.length === 0)) return [];
 
-    return present.filter((shape) => {
-        let everyBestPreserves = bestTiles.every((tile) => shapesAfterDiscard(hand, tile).indexOf(shape) >= 0);
-        let anInferiorBreaks = inferiorTiles.some((tile) => shapesAfterDiscard(hand, tile).indexOf(shape) < 0);
-        return everyBestPreserves && anInferiorBreaks;
-    });
+    let found = {};
+    createdByBest.forEach((shapes) => shapes.forEach((shape) => { found[shape] = true; }));
+    return HARD_MODE_SHAPES.filter((shape) => found[shape]);
 }
 
 /** Creates a natural closed-hand round with a shuffled wall. */
@@ -127,7 +201,7 @@ export function analyzeHardModePosition(round) {
         let value = evaluations[tile].value;
         return value > 0 && value < bestValue;
     });
-    let shapes = bestValue > 0 ? findDecisionShapes(round.hand, bestTiles, inferiorTiles) : [];
+    let shapes = bestValue > 0 ? findCreatedDecisionShapes(round.hand, bestTiles) : [];
 
     return {
         evaluations,

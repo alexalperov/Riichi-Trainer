@@ -3,7 +3,7 @@ import {
     advanceHardModeRound,
     analyzeHardModePosition,
     createHardModeRound,
-    findDecisionShapes,
+    findCreatedDecisionShapes,
     resolveHardModeDiscard
 } from './HardModeSimulation';
 
@@ -25,17 +25,20 @@ describe('hard mode simulation', () => {
         expect(round.turn).toBe(1);
     });
 
-    test('only reports a complex shape when optimal cuts preserve it and an alternative breaks it', () => {
+    test('reports a complex shape when the discard itself creates the resulting block', () => {
         let hand = handFromTiles([
-            3, 4, 5, 6,
+            3, 3, 4, 5, 6,
             11, 12, 13,
             21, 22, 23,
-            31, 31, 31,
-            37
+            31, 31, 31
         ]);
 
-        expect(findDecisionShapes(hand, [37], [3])).toContain('nobetan');
-        expect(findDecisionShapes(hand, [3], [37])).not.toContain('nobetan');
+        expect(findCreatedDecisionShapes(hand, [3])).toContain('nobetan');
+    });
+
+    test('rejects an outside discard that merely preserves an existing shape', () => {
+        let hand = handFromTiles([3, 4, 5, 6, 11, 12, 13, 21, 22, 23, 31, 31, 31, 37]);
+        expect(findCreatedDecisionShapes(hand, [37])).toEqual([]);
     });
 
     test('uses only deliberately selected advanced shapes', () => {
