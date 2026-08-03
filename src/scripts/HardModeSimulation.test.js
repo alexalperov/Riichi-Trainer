@@ -80,5 +80,6 @@ describe('hard mode simulation', () => {
 
         expect(found).not.toBeNull();
         expect(found.shapes.length).toBeGreaterThan(0);
+        expect(found.drawnTileIsOptimal).toBe(false);
     });
 });

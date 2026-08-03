@@ -196,6 +196,7 @@ export function analyzeHardModePosition(round) {
     let discards = distinctDiscards(round.hand);
     let bestValue = Math.max(...discards.map((tile) => evaluations[tile].value));
     let bestTiles = discards.filter((tile) => evaluations[tile].value === bestValue);
+    let drawnTileIsOptimal = bestTiles.indexOf(convertRedFives(round.lastDraw)) >= 0;
     // Zero-ukeire cuts tend to be visibly destructive rather than instructive.
     let inferiorTiles = discards.filter((tile) => {
         let value = evaluations[tile].value;
@@ -209,7 +210,8 @@ export function analyzeHardModePosition(round) {
         bestValue,
         shapes,
         shanten: calculateMinimumShanten(round.hand),
-        isPuzzle: shapes.length > 0 && inferiorTiles.length > 0
+        drawnTileIsOptimal,
+        isPuzzle: shapes.length > 0 && inferiorTiles.length > 0 && !drawnTileIsOptimal
     };
 }
 
