@@ -122,9 +122,12 @@ class HardModeQuiz extends React.Component {
         });
     }
 
-    tileList(tiles) {
+    tileList(tiles, alternatives = false) {
         let { t } = this.props;
-        return tiles.map((tile) => getTileAsText(t, tile, false)).join(' / ');
+        let names = tiles.map((tile) => getTileAsText(t, tile, false));
+        if (!alternatives || names.length < 2) return names.join(', ');
+        if (names.length === 2) return `${names[0]} ${t('hardMode.or')} ${names[1]}`;
+        return `${names.slice(0, -1).join(', ')}, ${t('hardMode.or')} ${names[names.length - 1]}`;
     }
 
     renderShape(shape) {
@@ -212,7 +215,7 @@ class HardModeQuiz extends React.Component {
                                                 </p>
                                                 {!feedback.correct &&
                                                     <p>{t('hardMode.bestResult', {
-                                                        tiles: this.tileList(puzzle.analysis.bestTiles),
+                                                        tiles: this.tileList(puzzle.analysis.bestTiles, true),
                                                         count: puzzle.analysis.bestValue
                                                     })}</p>
                                                 }

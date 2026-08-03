@@ -299,6 +299,7 @@ export const en = {
             bestResult: "Best: {{tiles}}, leaving {{count}} improving tile.",
             bestResult_plural: "Best: {{tiles}}, leaving {{count}} improving tiles.",
             improvingTiles: "Improving draws: {{tiles}}",
+            or: "or",
             next: "Find the next shape",
             shapeTitle: "Shape read",
             shapeHidden: "The target does not count unless your discard actively forms it. Name the resulting structure before committing.",
